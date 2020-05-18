@@ -1,0 +1,45 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    font-size: medium;
+    color: black;
+    line-height: 1.5;
+    background-color: black;
+}
+
+*,
+*:before, 
+*:after {
+    box-sizing: border-box;
+}
+
+.page {
+    width: 30%;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 30px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    background-color: lightskyblue;
+}
+
+header {
+    text-align: center;
+    background-color: aliceblue;
+    padding: 5px 0 5px;
+}
+
+.container {
+    padding: 10px;
+}
+
+.function_block {
+    margin: 5px;
+}
+
+.gdf_input {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: inherit;
+    margin: 5px 0 5px;
+}
