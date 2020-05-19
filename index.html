@@ -46,10 +46,12 @@
             <div class="function_block">
                 <label for="qu">q</label>
                 <input class="gdf_input" type="text" pattern="\d|\.\d+|\d\.\d*|\d?\.\d*e-\d+" id="qu" name="qu" />
-                <input type="radio" id="subsound" name="flow_speed" value="subsound">
-                <label for="flow_speed">M &#8804 1</label><br> <!-- &lt -->
-                <input type="radio" id="supersound" name="flow_speed" value="supersound">
-                <label for="flow_speed">M &#8805 1</label><br> <!-- &gt -->
+                <div class="radio_block">
+                    <input type="radio" id="subsound" name="flow_speed" value="subsound">
+                    <label for="subsound">M &#8804 1</label><br> <!-- &lt -->
+                    <input type="radio" id="supersound" name="flow_speed" value="supersound">
+                    <label for="supersound">M &#8805 1</label><br> <!-- &gt -->
+                </div>
             </div>
         </div> <!-- /container -->
     </div> <!-- /page -->
