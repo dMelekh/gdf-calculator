@@ -264,15 +264,25 @@ class Controller {
             'epsilon': 'getEpsilon',
             'qu': 'getQu'
         };
-        this.currGasState = this.gasStateByName['mach'];
         this.initInputs();
+        this.initInitialState();
         this.initEvents();
-        this.handlerUpdateFields();
+        
     }
 
     initInputs() {
         let gdfInputs = document.getElementsByClassName("gdf_input");
         this.inputsByNames = this.splitElementsByName(gdfInputs);
+        this.inputsByNamesForUpdation = Object.assign({}, this.inputsByNames);
+    }
+    
+    initInitialState() {
+        this.currGasStateName = 'mach';
+        this.currInputName = 'mach';
+        this.currGasState = this.gasStateByName[this.currGasStateName];
+        this.handlerUpdateFields();
+        // prevent on air field updation
+        delete this.inputsByNamesForUpdation[this.currGasStateName];
     }
 
     splitElementsByName(elements) {
@@ -286,24 +296,51 @@ class Controller {
     }
 
     initEvents() {
-        let handlerSetCurrGasState = this.handlerSetCurrGasState.bind(this);
-        let handlerUpdateFields = this.handlerUpdateFields.bind(this);
-        let handlerSetKappa = this.handlerSetKappa.bind(this);
-        this.inputsByNames['kappa'].addEventListener('change', handlerSetKappa);
-        let name;
+        this.initEventFocus();
+        this.initEventInput();
+    }
+    
+    initEventFocus() {
+        let handlerDontUpdateChangeSrc = this.handlerDontUpdateChangeSrc.bind(this);
         for (name in this.inputsByNames) {
-            //            console.log(item, ' -', gdfInputsByNames[item]);
-            if (name != 'kappa') {
-                this.inputsByNames[name].addEventListener('change', handlerSetCurrGasState);
-            }
-            this.inputsByNames[name].addEventListener('change', handlerUpdateFields);
+            this.inputsByNames[name].addEventListener('focus', handlerDontUpdateChangeSrc);
         }
+        let handlerSetCurrGasState = this.handlerSetCurrGasState.bind(this);
+        for (name in this.inputsByNames) {
+            if (name == 'kappa') {
+                continue;
+            }
+            this.inputsByNames[name].addEventListener('focus', handlerSetCurrGasState);
+        }
+    }
+    
+    initEventInput() {
+        let handlerSetKappa = this.handlerSetKappa.bind(this);
+        this.inputsByNames['kappa'].addEventListener('input', handlerSetKappa);
+        
+        let handlerSetCurrGasStateArg = this.handlerSetCurrGasStateArg.bind(this);
+        for (name in this.inputsByNames) {
+            if (name == 'kappa') {
+                continue;
+            }
+            this.inputsByNames[name].addEventListener('input', handlerSetCurrGasStateArg);
+        }
+        
+        let handlerUpdateFields = this.handlerUpdateFields.bind(this);
+        for (name in this.inputsByNames) {
+            this.inputsByNames[name].addEventListener('input', handlerUpdateFields);
+        }
+    }
+    
+    handlerDontUpdateChangeSrc(e) {
+        this.inputsByNamesForUpdation[this.currInputName] = this.inputsByNames[this.currInputName];
+        this.currInputName = e.target.name;
+        delete this.inputsByNamesForUpdation[this.currInputName];
     }
 
     handlerSetCurrGasState(e) {
-        console.log(this)
-        this.currGasState = this.gasStateByName[e.target.name];
-        this.currGasState.setArgument(e.target.value);
+        this.currGasStateName = e.target.name;
+        this.currGasState = this.gasStateByName[this.currGasStateName];
     }
     
     handlerSetKappa() {
@@ -312,11 +349,15 @@ class Controller {
             this.gasStateByName[name].setKappa(this.inputsByNames['kappa'].value);
         }
     }
+    
+    handlerSetCurrGasStateArg(e) {
+        this.currGasState.setArgument(e.target.value);
+    }
 
     handlerUpdateFields() {
         let name;
-        for (name in this.inputsByNames) {
-            this.inputsByNames[name].value = this.currGasState[this.getterByName[name]]();
+        for (name in this.inputsByNamesForUpdation) {
+            this.inputsByNamesForUpdation[name].value = this.currGasState[this.getterByName[name]]();
         }
     }
 
@@ -330,7 +371,7 @@ class Controller {
         4. correct labels of M<1 M>1: 
             4.1 bind labels to Qu value
             4.2 bind other fields to labels state changing
-
+        5. floating point: dot and comma
 */
 
 controller = new Controller();
