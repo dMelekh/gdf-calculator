@@ -1,11 +1,3 @@
-function splitElementsByName(elements) {
-    let elementsByClassNames = new Map();
-    for (let item of elements) {
-        elementsByClassNames[item.name] = item;
-    }
-    return elementsByClassNames;
-}
-
 class GasStateByMach {
     constructor() {
         this.kappa = 1.4; // kappa = 1.4 for normal air
@@ -20,7 +12,7 @@ class GasStateByMach {
         return this.kappa;
     }
 
-    setMach(mach) {
+    setArgument(mach) {
         this.mach = +mach;
     }
 
@@ -77,7 +69,7 @@ class GasStateByLambda {
         return this.kappa;
     }
 
-    setLambda(lambda) {
+    setArgument(lambda) {
         this.lambda = +lambda;
     }
 
@@ -171,7 +163,7 @@ class GasStateByQu extends GasStateDelegate {
         super(new GasStateByLambda());
         this.qu = this.getQu();
         this.funQuByLambda = function (lambda) {
-            this.setLambda(lambda);
+            this.setArgument(lambda);
             return this.getQu();
         };
         this.funQuByLambda = this.funQuByLambda.bind(this.wrappedState);
@@ -189,9 +181,9 @@ class GasStateByQu extends GasStateDelegate {
         this.rightLyambda = this.wrappedState.getLambdaMax();
     }
 
-    setQu(qu) {
+    setArgument(qu) {
         this.qu = +qu;
-        this.wrappedState.setLambda(
+        this.wrappedState.setArgument(
             getArgByHalfMethod(this.funQuByLambda, this.qu, this.leftLyambda, this.rightLyambda)
         );
     }
@@ -206,9 +198,9 @@ class GasStateByPi extends GasStateDelegate {
         super(new GasStateByMach());
     }
 
-    setPi(pi) {
+    setArgument(pi) {
         this.pi = +pi;
-        this.wrappedState.setMach(
+        this.wrappedState.setArgument(
             Math.sqrt((Math.pow(1.0 / this.pi, (this.getKappa() - 1.0) / this.getKappa()) - 1.0) * 2.0 / (this.getKappa() - 1.0))
         );
     }
@@ -218,14 +210,14 @@ class GasStateByPi extends GasStateDelegate {
     }
 }
 
-class GasStateByTau  extends GasStateDelegate {
+class GasStateByTau extends GasStateDelegate {
     constructor() {
         super(new GasStateByMach());
     }
 
-    setTau(tau) {
+    setArgument(tau) {
         this.tau = +tau;
-        this.wrappedState.setMach(
+        this.wrappedState.setArgument(
             Math.sqrt((1.0 / this.tau - 1.0) * 2.0 / (this.getKappa() - 1.0))
         );
     }
@@ -240,58 +232,105 @@ class GasStateByEpsilon extends GasStateDelegate {
     constructor() {
         super(new GasStateByMach());
     }
-    
-    setEpsilon(epsilon) {
+
+    setArgument(epsilon) {
         this.epsilon = +epsilon;
-        this.wrappedState.setMach(
-            Math.sqrt((Math.pow(1.0 / this.epsilon, this.getKappa()-1.0)-1.0)*2.0/(this.getKappa()-1.0))
+        this.wrappedState.setArgument(
+            Math.sqrt((Math.pow(1.0 / this.epsilon, this.getKappa() - 1.0) - 1.0) * 2.0 / (this.getKappa() - 1.0))
         );
     }
-    
+
     getEpsilon() {
         return this.epsilon;
     }
 }
 
-function updateFields(fields, state) {
-    fields['kappa'].value = state.getKappa();
-    fields['mach'].value = state.getMach();
-    fields['lambda'].value = state.getLambda();
-    fields['pi'].value = state.getPi();
-    fields['tau'].value = state.getTau();
-    fields['epsilon'].value = state.getEpsilon();
-    fields['qu'].value = state.getQu();
+class Controller {
+    constructor() {
+        this.gasStateByName = {
+            'mach': new GasStateByMach(),
+            'lambda': new GasStateByLambda(),
+            'pi': new GasStateByPi(),
+            'tau': new GasStateByTau(),
+            'epsilon': new GasStateByEpsilon(),
+            'qu': new GasStateByQu()
+        };
+        this.getterByName = {
+            'kappa': 'getKappa',
+            'mach': 'getMach',
+            'lambda': 'getLambda',
+            'pi': 'getPi',
+            'tau': 'getTau',
+            'epsilon': 'getEpsilon',
+            'qu': 'getQu'
+        };
+        this.currGasState = this.gasStateByName['mach'];
+        this.initInputs();
+        this.initEvents();
+        this.handlerUpdateFields();
+    }
+
+    initInputs() {
+        let gdfInputs = document.getElementsByClassName("gdf_input");
+        this.inputsByNames = this.splitElementsByName(gdfInputs);
+    }
+
+    splitElementsByName(elements) {
+        //    let elementsByClassNames = new Map();
+        let elementsByClassNames = {};
+        for (let item of elements) {
+            //        elementsByClassNames.set(item.name, item);
+            elementsByClassNames[item.name] = item;
+        }
+        return elementsByClassNames;
+    }
+
+    initEvents() {
+        let handlerSetCurrGasState = this.handlerSetCurrGasState.bind(this);
+        let handlerUpdateFields = this.handlerUpdateFields.bind(this);
+        let handlerSetKappa = this.handlerSetKappa.bind(this);
+        this.inputsByNames['kappa'].addEventListener('change', handlerSetKappa);
+        let name;
+        for (name in this.inputsByNames) {
+            //            console.log(item, ' -', gdfInputsByNames[item]);
+            if (name != 'kappa') {
+                this.inputsByNames[name].addEventListener('change', handlerSetCurrGasState);
+            }
+            this.inputsByNames[name].addEventListener('change', handlerUpdateFields);
+        }
+    }
+
+    handlerSetCurrGasState(e) {
+        console.log(this)
+        this.currGasState = this.gasStateByName[e.target.name];
+        this.currGasState.setArgument(e.target.value);
+    }
+    
+    handlerSetKappa() {
+        let name;
+        for (name in this.gasStateByName) {
+            this.gasStateByName[name].setKappa(this.inputsByNames['kappa'].value);
+        }
+    }
+
+    handlerUpdateFields() {
+        let name;
+        for (name in this.inputsByNames) {
+            this.inputsByNames[name].value = this.currGasState[this.getterByName[name]]();
+        }
+    }
+
 }
 
-let inputs = document.querySelectorAll('.function_block input');
-let inputsByNames = splitElementsByName(inputs);
+/*
+    TODO 200519
+        1. define pi, tau, epsilon using lambda
+        2. limit pi, tau, epsilon in range 0...1
+        3. limit lambda with lambda_max
+        4. correct labels of M<1 M>1: 
+            4.1 bind labels to Qu value
+            4.2 bind other fields to labels state changing
 
-//let stateByMach = new GasStateByMach();
-//console.log('stateByMach');
-//updateFields(inputsByNames, stateByMach);
+*/
 
-//let stateByLambda = new GasStateByLambda();
-//console.log('stateByLambda');
-//updateFields(inputsByNames, stateByLambda);
-
-//let stateByQu = new GasStateByQu();
-//console.log('stateByQu');
-//stateByQu.setQu(0.5);
-//updateFields(inputsByNames, stateByQu);
-
-//let stateByPi = new GasStateByPi();
-//console.log('stateByPi');
-//stateByPi.setPi(0.5);
-//updateFields(inputsByNames, stateByPi);
-
-//let stateByTau = new GasStateByTau();
-//console.log('stateByTau');
-//stateByTau.setTau(0.5);
-//updateFields(inputsByNames, stateByTau);
-
-let stateByEpsilon = new GasStateByEpsilon();
-console.log('stateByTau');
-stateByEpsilon.setEpsilon(0.5);
-updateFields(inputsByNames, stateByEpsilon);
-
-//updateFields(inputsByNames, stateByQu);
+controller = new Controller();
