@@ -257,6 +257,48 @@ let getterByName = {
 
 
 class FieldController {
+    constructor(input, gasState) {
+        this.input = input;
+        this.gasState = gasState;
+        let handlerSetCurrArg = this.handlerSetCurrArg.bind(this);
+        this.input.addEventListener('input', handlerSetCurrArg);
+    }
+    
+    handlerSetCurrArg() {
+        this.gasState.setArgument(this.input.value);
+    }
+}
+
+class FieldControllerUpdatable {
+    constructor(input, gasState, argGetterName) {
+        this.fieldController = new FieldController(input, gasState);
+        this.input = input;
+        this.gasState = gasState;
+        this.argGetterName = argGetterName;
+        this.updatableControllers = [];
+        let handlerUpdateFields = this.handlerUpdateFields.bind(this);
+        this.input.addEventListener('input', handlerUpdateFields);
+    }
+    
+    addUpdatableController(updatableController) {
+        if (updatableController === this || this.updatableControllers.includes(updatableController)) {
+            return;
+        }
+        this.updatableControllers.push(updatableController);
+    }
+    
+    handlerUpdateFields() {
+        for (let updatableController of this.updatableControllers) {
+            updatableController.updateValueBy(this.fieldController.gasState);
+        }
+    }
+    
+    updateValueBy(currGasState) {
+        this.input.value = currGasState[this.argGetterName]();
+    }
+}
+
+class FieldController {
     // TODO 200519 introduce FieldController for Kappa and Qu
     constructor(name, input, gasState, argGetterName) {
         this.name = name;
@@ -265,17 +307,14 @@ class FieldController {
         this.argGetterName = argGetterName;
         this.updatableControllers = [];
         this.initEvents();
+        this.active = false;
     }
 
-    getName() {
-        return this.name;
-    }
-
-    addUpdatableController(fieldController) {
+    addUpdatableController(updatableController) {
         if (fieldController === this) {
             return;
         }
-        this.updatableControllers.push(fieldController);
+        this.updatableControllers.push(updatableController);
     }
 
     initEvents() {
@@ -286,8 +325,20 @@ class FieldController {
     initEventInput() {
         let handlerSetCurrArg = this.handlerSetCurrArg.bind(this);
         let handlerUpdateFields = this.handlerUpdateFields.bind(this);
+        
         this.input.addEventListener('input', handlerSetCurrArg);
         this.input.addEventListener('input', handlerUpdateFields);
+    }
+    
+    handlerSetActive() {
+        this.active = true;
+        for (let updatableController of this.updatableControllers) {
+            updatableController.setInactive();
+        }
+    }
+    
+    setInactive() {
+        this.active = false;
     }
 
     handlerSetCurrArg() {
@@ -295,13 +346,41 @@ class FieldController {
     }
 
     handlerUpdateFields() {
-        for (let fieldController of this.updatableControllers) {
-            fieldController.setValue(this.gasState);
+        for (let updatableController of this.updatableControllers) {
+            updatableController.updateValueBy(this.gasState);
         }
     }
     
-    setValue(currGasState) {
+    updateValueBy(currGasState) {
         this.input.value = currGasState[this.argGetterName]();
+    }
+}
+
+class KappaController {
+    controller(input) {
+        this.input = input;
+        this.fieldControllers = [];
+        this.initEvents();
+    }
+    
+    initEvents() {
+        this.initEventInput();
+    }
+    
+    initEventInput() {
+        handlerSetCurrArg = this.handlerSetCurrArg.bind(this);
+        this.input.addEventListener('input', handlerSetCurrArg);
+    }
+    
+    pushFieldController(fieldController) {
+        this.fieldControllers.push(fieldController);
+    }
+    
+    handlerSetCurrArg() {
+        kappa = this.input.value;
+        for (fieldController of this.fieldControllers) {
+            fieldController.setKappa(kappa);
+        }
     }
 }
 
@@ -327,8 +406,9 @@ class Controller {
         this.initInputs();
         this.initInitialState();
         this.initEvents();
-
     }
+    
+    
 
     initInputs() {
         let gdfInputs = document.getElementsByClassName("gdf_input");
