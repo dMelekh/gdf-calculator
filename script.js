@@ -167,8 +167,7 @@ class GasStateByQu extends GasStateDelegate {
             return this.getQu();
         };
         this.funQuByLambda = this.funQuByLambda.bind(this.wrappedState);
-        this.leftLyambda = 0.0;
-        this.rightLyambda = 1.0;
+        this.setSubsound();
     }
 
     setSubsound() {
@@ -244,8 +243,6 @@ class GasStateByEpsilon extends GasStateDelegate {
         return this.epsilon;
     }
 }
-
-
 
 class ControllerInput {
     constructor(input) {
@@ -355,6 +352,11 @@ class ControllerGasState {
     addListenerUpdate(listener) {
         this.inputController.addListenerUpdate(listener);
     }
+
+    setCurrValueToGasState() {
+        let currVal = this.inputController.input.value;
+        this.gasState.setArgument(currVal);
+    }
 }
 
 class KappaController {
@@ -384,6 +386,90 @@ class KappaController {
     onGasFunctionInputSetActive(name, value) {
         this.activeName = name;
     }
+
+    onMachZoneSwitcherClickedSetQuActive() {
+        // set as listener in ControllerMachZoneSwitcher
+        this.activeName = 'qu';
+    }
+}
+
+function splitElementsBy(elementFieldName, elements) {
+    //    let elementsByClassNames = new Map();
+    let elementsByClassNames = {};
+    for (let element of elements) {
+        //        elementsByClassNames.set(item.name, item);
+        elementsByClassNames[element[elementFieldName]] = element;
+    }
+    return elementsByClassNames;
+}
+
+class ControllerMachZoneSwitcher {
+    constructor(machInputController, kappaController, quController) {
+        this.machInputController = machInputController;
+        this.kappaController = kappaController;
+        this.quController = quController;
+        let flowSpeedElements = document.getElementsByName('flow_speed');
+        this.radios = splitElementsBy('id', flowSpeedElements);
+        this.initEvents();
+    }
+
+    initEvents() {
+        let updateSwitcherState = this.updateSwitcherStateByMachVal.bind(this);
+        this.machInputController.addListenerInput(updateSwitcherState);
+        this.machInputController.addListenerUpdate(updateSwitcherState);
+        
+        let subsoundChecked = this.subsoundChecked.bind(this);
+        this.radios['subsound'].addEventListener('change', subsoundChecked);
+        let supersoundChecked = this.supersoundChecked.bind(this);
+        this.radios['supersound'].addEventListener('change', supersoundChecked);
+        
+        let onMachZoneSwitcherClickedSetQuActive = this.kappaController.onMachZoneSwitcherClickedSetQuActive.bind(this.kappaController);
+        let setQuValToGasState = this.setQuValToGasState.bind(this);
+        let updateFieldsByQuController = this.updateFieldsByQuController.bind(this);
+        
+        for (let id in this.radios) {
+            let radio = this.radios[id];
+            radio.addEventListener('change', onMachZoneSwitcherClickedSetQuActive);
+            radio.addEventListener('change', setQuValToGasState);
+            radio.addEventListener('change', updateFieldsByQuController);
+        }
+    }
+
+    updateSwitcherStateByMachVal(name, value) {
+        let val = +value;
+        if (val < 1) {
+            this.radios['subsound'].checked = true;
+            this.quController.gasState.setSubsound();
+            return;
+        }
+        if (val > 1) {
+            this.radios['supersound'].checked = true;
+            this.quController.gasState.setSupersound();
+            return;
+        }
+        // default state
+        if ( !this.radios['subsound'].checked && !this.radios['supersound'].checked) {
+            this.radios['subsound'].checked = true;
+            this.quController.gasState.setSubsound();
+            return;
+        }
+    }
+    
+    subsoundChecked() {
+        this.quController.gasState.setSubsound();
+    }
+    
+    supersoundChecked() {
+        this.quController.gasState.setSupersound();
+    }
+
+    setQuValToGasState() {
+        this.quController.setCurrValueToGasState();
+    }
+    
+    updateFieldsByQuController() {
+        this.quController.updateDependentControllers();
+    }
 }
 
 class Controller2 {
@@ -400,6 +486,7 @@ class Controller2 {
         this.initGasStateControllers();
         this.initDependencies();
         this.printDefaults();
+
     }
 
     initInputControllers() {
@@ -407,7 +494,7 @@ class Controller2 {
         let inputControllers = Array.from(inputs, function (input) {
             return new ControllerInput(input);
         });
-        this.nameVsInputController = this.splitElementsByName(inputControllers);
+        this.nameVsInputController = splitElementsBy('name', inputControllers);
     }
 
     initGasStateControllers() {
@@ -429,8 +516,11 @@ class Controller2 {
         this.kappaController = new KappaController(
             this.nameVsInputController['kappa'], this.nameVsGasStateController
         );
+        this.machZoneSwitcher = new ControllerMachZoneSwitcher(
+            this.nameVsInputController['mach'], this.kappaController, this.nameVsGasStateController['qu']
+        );
     }
-    
+
     printDefaults() {
         let defaultActiveName = this.kappaController.activeName;
         let defaultActiveState = this.nameVsGasState[defaultActiveName];
@@ -439,16 +529,6 @@ class Controller2 {
         kappaInput.setValue(defaultActiveState.getKappa());
         this.kappaController.onKappaChangedUpdateFields();
         defaultActiveController.updateValueBy(defaultActiveState);
-    }
-
-    splitElementsByName(elements) {
-        //    let elementsByClassNames = new Map();
-        let elementsByClassNames = {};
-        for (let item of elements) {
-            //        elementsByClassNames.set(item.name, item);
-            elementsByClassNames[item.name] = item;
-        }
-        return elementsByClassNames;
     }
 
 }
@@ -675,7 +755,14 @@ class Controller {
         4. correct labels of M<1 M>1: 
             4.1 bind labels to Qu value
             4.2 bind other fields to labels state changing
-        5. floating point: dot and comma
+        5. format control
+            5.1 only one floating point
+            5.2 comma to dot correction
+            5.3 number of digit positions after dot
+            5.4 scientific representation
+        6. page must scale up for mobile devices correctly
+        7. tooltips
+        8. graphs
 */
 
 let controller = new Controller2();
