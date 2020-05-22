@@ -15,6 +15,14 @@ class GasStateByMach {
     setArgument(mach) {
         this.mach = +mach;
     }
+    
+    getArgMin() {
+        return 0.0;
+    }
+    
+    getArgMax() {
+        return Infinity;
+    }
 
     getMach() {
         return this.mach;
@@ -52,6 +60,7 @@ class GasStateByMach {
     getTauInverse() {
         return 1.0 + (this.kappa - 1.0) / 2.0 * Math.pow(this.getMach(), 2.0);
     }
+
 }
 
 class GasStateByLambda {
@@ -72,7 +81,19 @@ class GasStateByLambda {
     setArgument(lambda) {
         this.lambda = +lambda;
     }
+    
+    getArgMin() {
+        return 0.0;
+    }
+    
+    getArgMax() {
+        return this.getLambdaMax();
+    }
 
+    getLambdaMax() {
+        return Math.sqrt((this.kappa + 1.0) / (this.kappa - 1.0));
+    }
+    
     getLambda() {
         return this.lambda;
     }
@@ -95,10 +116,6 @@ class GasStateByLambda {
 
     getQu() {
         return this.getLambda() * this.getEpsilon() * Math.pow((this.kappa + 1.0) / 2.0, 1.0 / (this.kappa - 1.0));
-    }
-
-    getLambdaMax() {
-        return Math.sqrt((this.kappa + 1.0) / (this.kappa - 1.0));
     }
 }
 
@@ -155,6 +172,14 @@ class GasStateDelegate {
     }
     getQu() {
         return this.wrappedState.getQu();
+    }
+    
+    getArgMin() {
+        return 0.0;
+    }
+    
+    getArgMax() {
+        return 1.0;
     }
 }
 
@@ -240,7 +265,7 @@ class GasStateByTau extends GasStateDelegate {
     _getLambda(k, tau) {
         return Math.sqrt((1.0 - tau) * (k + 1.0) / (k - 1.0));
     }
-
+    
     getTau() {
         return this.tau;
     }
@@ -343,7 +368,16 @@ class ControllerGasState {
     }
 
     onCurrArgInput(name, value) {
-        this.gasState.setArgument(value);
+        let val = +value;
+        if (val < this.gasState.getArgMin()) {
+            val = this.gasState.getArgMin();
+            this.inputController.setValue(val);
+        }
+        if (val > this.gasState.getArgMax()) {
+            val = this.gasState.getArgMax();
+            this.inputController.setValue(val);
+        }
+        this.gasState.setArgument(val);
         this.updateDependentControllers();
     }
 
