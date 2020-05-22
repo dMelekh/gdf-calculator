@@ -194,14 +194,24 @@ class GasStateByQu extends GasStateDelegate {
 
 class GasStateByPi extends GasStateDelegate {
     constructor() {
-        super(new GasStateByMach());
+        //        super(new GasStateByMach());
+        super(new GasStateByLambda());
     }
 
     setArgument(pi) {
         this.pi = +pi;
         this.wrappedState.setArgument(
-            Math.sqrt((Math.pow(1.0 / this.pi, (this.getKappa() - 1.0) / this.getKappa()) - 1.0) * 2.0 / (this.getKappa() - 1.0))
+            //            this._getMach(this.getKappa(), this.pi)
+            this._getLambda(this.getKappa(), this.pi)
         );
+    }
+
+    _getMach(k, pi) {
+        return Math.sqrt((Math.pow(1.0 / pi, (k - 1.0) / k) - 1.0) * 2.0 / (k - 1.0));
+    }
+
+    _getLambda(k, pi) {
+        return Math.sqrt((1 - Math.pow(pi, (k - 1.0) / k)) * (k + 1.0) / (k - 1.0));
     }
 
     getPi() {
@@ -211,14 +221,24 @@ class GasStateByPi extends GasStateDelegate {
 
 class GasStateByTau extends GasStateDelegate {
     constructor() {
-        super(new GasStateByMach());
+        //        super(new GasStateByMach());
+        super(new GasStateByLambda());
     }
 
     setArgument(tau) {
         this.tau = +tau;
         this.wrappedState.setArgument(
-            Math.sqrt((1.0 / this.tau - 1.0) * 2.0 / (this.getKappa() - 1.0))
+            //            this._getMach(this.getKappa(), this.tau)
+            this._getLambda(this.getKappa(), this.tau)
         );
+    }
+
+    _getMach(k, tau) {
+        return Math.sqrt((1.0 / tau - 1.0) * 2.0 / (k - 1.0));
+    }
+
+    _getLambda(k, tau) {
+        return Math.sqrt((1.0 - tau) * (k + 1.0) / (k - 1.0));
     }
 
     getTau() {
@@ -229,14 +249,23 @@ class GasStateByTau extends GasStateDelegate {
 
 class GasStateByEpsilon extends GasStateDelegate {
     constructor() {
-        super(new GasStateByMach());
+        //        super(new GasStateByMach());
+        super(new GasStateByLambda());
     }
 
     setArgument(epsilon) {
         this.epsilon = +epsilon;
         this.wrappedState.setArgument(
-            Math.sqrt((Math.pow(1.0 / this.epsilon, this.getKappa() - 1.0) - 1.0) * 2.0 / (this.getKappa() - 1.0))
+            this._getLambda(this.getKappa(), this.epsilon)
         );
+    }
+
+    _getMach(k, epsilon) {
+        return Math.sqrt((Math.pow(1.0 / this.epsilon, k - 1.0) - 1.0) * 2.0 / (k - 1.0));
+    }
+
+    _getLambda(k, epsilon) {
+        return Math.sqrt((1.0 - Math.pow(epsilon, k - 1.0)) * (k + 1.0) / (k - 1.0));
     }
 
     getEpsilon() {
@@ -417,16 +446,16 @@ class ControllerMachZoneSwitcher {
         let updateSwitcherState = this.updateSwitcherStateByMachVal.bind(this);
         this.machInputController.addListenerInput(updateSwitcherState);
         this.machInputController.addListenerUpdate(updateSwitcherState);
-        
+
         let subsoundChecked = this.subsoundChecked.bind(this);
         this.radios['subsound'].addEventListener('change', subsoundChecked);
         let supersoundChecked = this.supersoundChecked.bind(this);
         this.radios['supersound'].addEventListener('change', supersoundChecked);
-        
+
         let onMachZoneSwitcherClickedSetQuActive = this.kappaController.onMachZoneSwitcherClickedSetQuActive.bind(this.kappaController);
         let setQuValToGasState = this.setQuValToGasState.bind(this);
         let updateFieldsByQuController = this.updateFieldsByQuController.bind(this);
-        
+
         for (let id in this.radios) {
             let radio = this.radios[id];
             radio.addEventListener('change', onMachZoneSwitcherClickedSetQuActive);
@@ -448,17 +477,17 @@ class ControllerMachZoneSwitcher {
             return;
         }
         // default state
-        if ( !this.radios['subsound'].checked && !this.radios['supersound'].checked) {
+        if (!this.radios['subsound'].checked && !this.radios['supersound'].checked) {
             this.radios['subsound'].checked = true;
             this.quController.gasState.setSubsound();
             return;
         }
     }
-    
+
     subsoundChecked() {
         this.quController.gasState.setSubsound();
     }
-    
+
     supersoundChecked() {
         this.quController.gasState.setSupersound();
     }
@@ -466,7 +495,7 @@ class ControllerMachZoneSwitcher {
     setQuValToGasState() {
         this.quController.setCurrValueToGasState();
     }
-    
+
     updateFieldsByQuController() {
         this.quController.updateDependentControllers();
     }
