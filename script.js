@@ -304,6 +304,8 @@ class ControllerInput {
         this.name = input.name;
         this.listenersInput = [];
         this.listenersUpdate = [];
+        this.pattern = new RegExp(input['pattern']);
+        this.prevValue = '';
         this.initEvents();
     }
 
@@ -314,9 +316,21 @@ class ControllerInput {
 
     signalInput() {
         //        listener is method 
-        for (let listener of this.listenersInput) {
-            listener(this.name, this.input.value);
+        if (this.checkFormat()) {
+            for (let listener of this.listenersInput) {
+                listener(this.name, this.input.value);
+            }    
         }
+    }
+    
+    checkFormat() {
+        this.input.value = this.input.value.replace(/,/g, '.');
+        if (this.pattern.test(this.input.value)) {
+            this.prevValue = this.input.value;
+            return true;
+        }
+        this.input.value = this.prevValue;
+        return false;
     }
 
     addListenerInput(listener) {
@@ -549,7 +563,6 @@ class Controller2 {
         this.initGasStateControllers();
         this.initDependencies();
         this.printDefaults();
-
     }
 
     initInputControllers() {
@@ -706,8 +719,6 @@ class Controller {
         this.initEvents();
     }
 
-
-
     initInputs() {
         let gdfInputs = document.getElementsByClassName("gdf_input");
         this.inputsByNames = this.splitElementsByName(gdfInputs);
@@ -812,15 +823,7 @@ class Controller {
 
 /*
     TODO 200519
-        1. define pi, tau, epsilon using lambda
-        2. limit pi, tau, epsilon in range 0...1
-        3. limit lambda with lambda_max
-        4. correct labels of M<1 M>1: 
-            4.1 bind labels to Qu value
-            4.2 bind other fields to labels state changing
         5. format control
-            5.1 only one floating point
-            5.2 comma to dot correction
             5.3 number of digit positions after dot
             5.4 scientific representation
         6. page must scale up for mobile devices correctly
