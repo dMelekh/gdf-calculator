@@ -1,10 +1,11 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    font-size: medium;
+/*    font-size: 1px;*/
     color: black;
     line-height: 1.5;
-    background-color: black;
+    background-color: gray;
+    font-size: 1em;
 }
 
 *,
@@ -14,32 +15,45 @@ body {
 }
 
 .page {
-    width: 30%;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 30px;
-    padding-top: 20px;
-    padding-bottom: 20px;
-    background-color: lightskyblue;
+    width: 70%;
+    max-width: 500px;
+    margin: 3% auto;
+    padding: 1% 0;
+    background-color: lightgray;
+    border-radius: 3%;
 }
 
 header {
     text-align: center;
     background-color: aliceblue;
-    padding: 5px 0 5px;
+    margin: 3% 0;
+    padding: 1% 0;
 }
 
 .container {
-    padding: 10px;
+    padding: 2% 0;
 }
 
 .function_block {
-    margin: 5px;
+    margin: 1% 0;
 }
 
 .gdf_input {
-    width: 100%;
-    box-sizing: border-box;
+    width: 85%;
+    display: inline-block;
     font-size: inherit;
-    margin: 5px 0 5px;
+    margin: 0 0 5px;
+    padding: 5px;
+    background-color: aliceblue;
+}
+
+.gdf_label {
+    display: inline-block;
+    width: 10%;
+    text-align: right;
+    margin: 0;
+}
+
+.mach_area {
+    margin-left: 10%;
 }

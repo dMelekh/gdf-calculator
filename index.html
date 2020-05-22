@@ -3,19 +3,20 @@
 
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>Gas Dynamics Functions</title>
+    <title>1-D gas dynamics functions</title>
     <script type="text/javascript" src="script.js" defer></script>
 </head>
 
 <body>
     <div class="page">
         <header class="header">
-            Gas Dynamics Functions
+            1-D gas dynamics functions
         </header>
         <div class="container">
             <div class="function_block">
-                <label for="kappa">&#954</label>
+                <label class="gdf_label" for="kappa">&#954</label>
                 <input class="gdf_input" type="text" id="kappa" name="kappa" list="kappa_list" default="1.4" pattern="^\d?(\.\d*)?$" />
                 <datalist id="kappa_list">
                     <option value="1.4">
@@ -24,29 +25,29 @@
                 </datalist>
             </div>
             <div class="function_block">
-                <label for="mach">M</label>
+                <label class="gdf_label" for="mach">M</label>
                 <input class="gdf_input" type="text" pattern="^\d*(\.\d*)?$|^\d*(\.\d*)?e[-+]\d*$|^Infinity$" id="mach" name="mach" />
             </div>
             <div class="function_block">
-                <label for="lambda">&#955</label>
+                <label class="gdf_label" for="lambda">&#955</label>
                 <input class="gdf_input" type="text" pattern="^\d?(\.\d*)?$|^\d?(\.\d*)?e-\d*$" id="lambda" name="lambda" />
             </div>
             <div class="function_block">
-                <label for="pi">&#960</label>
+                <label class="gdf_label" for="pi">&#960</label>
                 <input class="gdf_input" type="text" pattern="^\d?(\.\d*)?$|^\d?(\.\d*)?e-\d*$" id="pi" name="pi" />
             </div>
             <div class="function_block">
-                <label for="tau">&#964</label>
+                <label class="gdf_label" for="tau">&#964</label>
                 <input class="gdf_input" type="text" pattern="^\d?(\.\d*)?$|^\d?(\.\d*)?e-\d*$" id="tau" name="tau" />
             </div>
             <div class="function_block">
-                <label for="epsilon">&#949</label>
+                <label class="gdf_label" for="epsilon">&#949</label>
                 <input class="gdf_input" type="text" pattern="^\d?(\.\d*)?$|^\d?(\.\d*)?e-\d*$" id="epsilon" name="epsilon" />
             </div>
             <div class="function_block">
-                <label for="qu">q</label>
+                <label class="gdf_label" for="qu">q</label>
                 <input class="gdf_input" type="text" pattern="^\d?(\.\d*)?$|^\d?(\.\d*)?e-\d*$" id="qu" name="qu" />
-                <div class="radio_block">
+                <div class="mach_area">
                     <input type="radio" id="subsound" name="flow_speed" value="subsound">
                     <label for="subsound">M &#8804 1</label><br> <!-- &lt -->
                     <input type="radio" id="supersound" name="flow_speed" value="supersound">
