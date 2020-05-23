@@ -1,7 +1,7 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-/*    font-size: 1px;*/
+    /*    font-size: 1px;*/
     color: black;
     line-height: 1.5;
     background-color: gray;
@@ -9,51 +9,131 @@ body {
 }
 
 *,
-*:before, 
+*:before,
 *:after {
     box-sizing: border-box;
 }
 
 .page {
+    overflow: auto;
+}
+
+
+.sidebar {
+    /*    overflow: hidden;*/
+    border: 1px solid #ccc;
+    /*    background-color: #f1f1f1;*/
+    margin: 0;
+    padding: 0;
+    width: 10%;
+    background-color: #f1f1f1;
+    position: fixed;
+    height: 100%;
+    overflow: auto;
+}
+
+.tab {
+    width: 100%;
+    display: block;
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 17px;
+}
+
+/* Change background color of buttons on hover */
+.tab:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab_active {
+    background-color: #4CAF50;
+    color: black;
+    color: white;
+}
+
+.tab_content {
     width: 70%;
     max-width: 500px;
     margin: 3% auto;
-    padding: 1% 0;
     background-color: lightgray;
-    border-radius: 3%;
+/*    border-radius: 3%;*/
+    border-radius: 1em;
+    padding: 1em 0;
 }
 
 header {
     text-align: center;
     background-color: aliceblue;
-    margin: 3% 0;
+/*    margin: 3% 0;*/
     padding: 1% 0;
 }
 
 .container {
-    padding: 2% 0;
+    margin: 2% 5% 0;
 }
 
-.function_block {
-    margin: 1% 0;
+.gdf_input,
+.setting_input {
+    display: inline-block;
+    font-size: inherit;
+    padding: 1%;
+    background-color: floralwhite;
 }
 
 .gdf_input {
-    width: 85%;
+    width: 90%;
+    margin-bottom: 1%;
+}
+
+.setting_input {
+    width: 100%;
+    /*    margin: 0 5% 1% 5%;*/
+}
+
+.gdf_label,
+.setting_label {
     display: inline-block;
-    font-size: inherit;
-    margin: 0 0 5px;
-    padding: 5px;
-    background-color: aliceblue;
 }
 
 .gdf_label {
-    display: inline-block;
-    width: 10%;
+    width: 5%;
     text-align: right;
-    margin: 0;
 }
 
 .mach_area {
-    margin-left: 10%;
+    margin-left: 5%;
+}
+
+@media screen and (max-width: 700px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+
+    .tab {
+        width: auto;
+        float: left;
+    }
+
+    .tab_content {
+        width: 90%;
+    }
+    
+    .header {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 400px) {
+    .tab {
+        text-align: center;
+        float: none;
+    }
 }
