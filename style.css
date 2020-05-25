@@ -60,6 +60,7 @@ body {
 .tab_content {
     width: 70%;
     max-width: 500px;
+    min-width: 175px;
     margin: 3% auto;
     background-color: lightgray;
 /*    border-radius: 3%;*/
@@ -119,7 +120,7 @@ header {
 
     .tab {
         width: auto;
-        float: left;
+        float: right;
     }
 
     .tab_content {
