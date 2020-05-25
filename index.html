@@ -16,20 +16,20 @@
 <body>
     <div class="page">
         <div class="sidebar">
-            <a class="tab" name="gdf" id="tab_opened_by_default">gdf</a>
+            <a class="tab" name="gdf" id="tab_opened_by_default">GDF</a>
             <a class="tab" name="settings">settings</a>
         </div> <!-- /sidebar -->
         <div class="tab_content tab_settings" name="settings">
             <header class="header">Settings</header>
             <div class="container">
                 <div class="input_block">
-                    <label class="setting_label" for="mantissa">mantissa size</label>
-                    <input class="setting_input" name="mantissa" type="number" min="3" max="10" value="5"></input>
+                    <label class="setting_label" for="mantissa_size">mantissa size</label>
+                    <input class="setting_input" name="mantissa_size" type="number" min="2" max="10" value="5"></input>
                 </div>
 
                 <div class="input_block">
-                    <label class="setting_label" for="decimal separator">decimal separator</label>
-                    <select class="setting_input" name="decimal separator">
+                    <label class="setting_label" for="decimal_separator">decimal separator</label>
+                    <select class="setting_input" name="decimal_separator">
                         <option value=".">"." dot</option>
                         <option value=",">"," comma</option>
                     </select>
@@ -50,7 +50,7 @@
             <div class="container">
                 <div class="function_block">
                     <label class="gdf_label" for="kappa">&#954</label>
-                    <input class="gdf_input" type="text" id="kappa" name="kappa" list="kappa_list" default="1.4" pattern="^\d?(\.\d*)?$" />
+                    <input class="gdf_input" type="text" id="kappa" name="kappa" list="kappa_list" default="1.4" pattern="^\d?([\.,]?\d*)?$" />
                     <datalist id="kappa_list">
                         <option value="1.4">
                         <option value="1.33">
@@ -59,27 +59,27 @@
                 </div>
                 <div class="function_block">
                     <label class="gdf_label" for="mach">M</label>
-                    <input class="gdf_input" type="text" pattern="^\d*(\.\d*)?$|^\d*(\.\d*)?e[-+]\d*$|^Infinity$" id="mach" name="mach" />
+                    <input class="gdf_input" type="text" pattern="^\d*([\.,]?\d*)?(e[-+]?\d*)?$|^Infinity$" id="mach" name="mach" />
                 </div>
                 <div class="function_block">
                     <label class="gdf_label" for="lambda">&#955</label>
-                    <input class="gdf_input" type="text" pattern="^\d?(\.\d*)?$|^\d?(\.\d*)?e-\d*$" id="lambda" name="lambda" />
+                    <input class="gdf_input" type="text" pattern="^\d?([\.,]?\d*)?(e[-+]?\d*)?$" id="lambda" name="lambda" />
                 </div>
                 <div class="function_block">
                     <label class="gdf_label" for="pi">&#960</label>
-                    <input class="gdf_input" type="text" pattern="^\d?(\.\d*)?$|^\d?(\.\d*)?e-\d*$" id="pi" name="pi" />
+                    <input class="gdf_input" type="text" pattern="^\d?([\.,]?\d*)?e?(-?\d*|\+?0?)?$" id="pi" name="pi" />
                 </div>
                 <div class="function_block">
                     <label class="gdf_label" for="tau">&#964</label>
-                    <input class="gdf_input" type="text" pattern="^\d?(\.\d*)?$|^\d?(\.\d*)?e-\d*$" id="tau" name="tau" />
+                    <input class="gdf_input" type="text" pattern="^\d?([\.,]?\d*)?e?(-?\d*|\+?0?)?$" id="tau" name="tau" />
                 </div>
                 <div class="function_block">
                     <label class="gdf_label" for="epsilon">&#949</label>
-                    <input class="gdf_input" type="text" pattern="^\d?(\.\d*)?$|^\d?(\.\d*)?e-\d*$" id="epsilon" name="epsilon" />
+                    <input class="gdf_input" type="text" pattern="^\d?([\.,]?\d*)?e?(-?\d*|\+?0?)?$" id="epsilon" name="epsilon" />
                 </div>
                 <div class="function_block">
                     <label class="gdf_label" for="qu">q</label>
-                    <input class="gdf_input" type="text" pattern="^\d?(\.\d*)?$|^\d?(\.\d*)?e-\d*$" id="qu" name="qu" />
+                    <input class="gdf_input" type="text" pattern="^\d?([\.,]?\d*)?e?(-?\d*|\+?0?)?$" id="qu" name="qu" />
                     <div class="mach_area">
                         <input type="radio" id="subsound" name="flow_speed" value="subsound">
                         <label for="subsound">M &#8804 1</label><br> <!-- &lt -->
