@@ -324,14 +324,13 @@ class ControllerFormProperties {
     constructor() {
         let inputs = document.getElementsByClassName("setting_input");
         this.nameVsInput = splitElementsBy('name', inputs);
-//        this.regexDelTrailZeros = new RegExp('0*(e[+-]0*)?$');
         this.regexDelTrailZeros = new RegExp('([\.,]?0+)?(e[+-]0+)?$');
         this.initMantissaSizeInput();
     }
     
     initMantissaSizeInput() {
         let mantissaInput = this.nameVsInput.get('mantissa_size');
-        this.mantissaInputController = new ControllerInput2(mantissaInput, this, 'change');
+        this.mantissaInputController = new ControllerInput(mantissaInput, this, 'change');
         this.mantissaInputController.addLimiterInput(new LimiterInputOfHtmlValue(mantissaInput));
     }
 
@@ -362,7 +361,7 @@ class ControllerFormProperties {
     }
 }
 
-class ControllerInput2 {
+class ControllerInput {
     //  listener is a method
     constructor(input, properties, inputTypeInputOrChange) {
         this.input = input;
@@ -395,6 +394,8 @@ class ControllerInput2 {
             listener(this.name, this.currValue);
         }
         this.prevValue = this.currValue;
+        this.verifyPrevValue();
+        console.log(this.prevValue);
         this.displayCurrValWith(this.limitersOutOnInput);
     }
 
@@ -410,7 +411,14 @@ class ControllerInput2 {
         this.currValue = value;
         this.displayCurrVal();
         this.prevValue = this.input.value;
+        this.verifyPrevValue();
         this.signalUpdate();
+    }
+    
+    verifyPrevValue() {
+        for (let limiter of this.limitersInput) {
+            this.prevValue = limiter.limit('', this.prevValue);
+        }
     }
     
     displayCurrVal() {
@@ -528,78 +536,7 @@ class LimiterOutputOfFloatRepresentation {
     }
 }
 
-class ControllerInput {
-    constructor(input, properties) {
-        this.input = input;
-        this.properties = properties;
-        this.name = input.name;
-        this.listenersInput = [];
-        this.listenersUpdate = [];
-        this.pattern = new RegExp(input['pattern']);
-        this.prevValue = '';
-        this.initEvents();
-    }
-
-    initEvents() {
-        let signalInput = this.signalInput.bind(this);
-        this.input.addEventListener('input', signalInput);
-        let updateSeparatorOnOutput = this.updateSeparatorOnOutput.bind(this);
-        this.properties.addListenerFormatChanged(updateSeparatorOnOutput);
-    }
-
-    signalInput() {
-        //        listener is method 
-        if (this.checkFormat()) {
-            this.updateSeparatorOnOutput();
-            let inputtedValue = this.getValue();
-            for (let listener of this.listenersInput) {
-                listener(this.name, inputtedValue);
-            }
-        }
-    }
-
-    checkFormat() {
-        if (this.pattern.test(this.input.value)) {
-            this.prevValue = this.input.value;
-            return true;
-        }
-        this.input.value = this.prevValue;
-        return false;
-    }
-
-    updateSeparatorOnOutput() {
-        this.input.value = this.properties.replaceSeparator(this.input.value);
-    }
-
-    getValue() {
-        return this.input.value.replace(/[\.\,]/g, '\.');
-    }
-
-    addListenerInput(listener) {
-        //        listener is method 
-        this.listenersInput.push(listener);
-    }
-
-    setFormattedValueToOutput(formattedValue) {
-        this.prevValue = formattedValue;
-        this.input.value = formattedValue;
-        this.signalUpdate();
-    }
-
-    signalUpdate() {
-        //        listener is method
-        for (let listener of this.listenersUpdate) {
-            listener(this.name, this.value);
-        }
-    }
-
-    addListenerUpdate(listener) {
-        //        listener is method 
-        this.listenersUpdate.push(listener);
-    }
-}
-
-class ControllerGasState2 {
+class ControllerGasState {
     constructor(inputController, gasState) {
         this.inputController = inputController;
         this.argGetterName = getterByName[inputController.name];
@@ -655,81 +592,6 @@ class ControllerGasState2 {
 
     setCurrValueToGasState() {
         this.inputController.signalInput();
-    }
-}
-
-class ControllerGasState {
-    constructor(properties, inputController, gasState) {
-        this.inputController = inputController;
-        this.argGetterName = getterByName[inputController.name];
-        this.gasState = gasState;
-        this.properties = properties;
-        this.dependentControllers = [];
-        this.initEvents();
-    }
-
-    initEvents() {
-        let onCurrArgInput = this.onCurrArgInput.bind(this);
-        this.inputController.addListenerInput(onCurrArgInput);
-    }
-
-    onCurrArgInput(name, value) {
-        let val = +value;
-        if (val < this.gasState.getArgMin()) {
-            val = this.gasState.getArgMin();
-            this.setValueToOutput(val);
-        }
-        if (val > this.gasState.getArgMax()) {
-            val = this.gasState.getArgMax();
-            this.setValueToOutput(val);
-        }
-        this.gasState.setArgument(val);
-        this.updateDependentControllers();
-    }
-
-    setDependentControllers(dependentControllers) {
-        let thisController = this;
-        this.dependentControllers = dependentControllers.filter(function (item) {
-            return item !== thisController;
-        });
-    }
-
-    updateDependentControllers() {
-        for (let dependent of this.dependentControllers) {
-            dependent.updateValueBy(this.gasState);
-        }
-    }
-
-    updateValueBy(currGasState) {
-        let newVal = currGasState[this.argGetterName]();
-        this.setValueToOutput(newVal);
-    }
-
-    setValueToOutput(val) {
-        let formatted = this.properties.formatValue(val);
-        this.inputController.setFormattedValueToOutput(formatted);
-    }
-
-    bindKappaInputController(kappaInputController) {
-        let onKappaChangedSetKappaVal = this.onKappaChangedSetKappaVal.bind(this);
-        kappaInputController.addListenerInput(onKappaChangedSetKappaVal);
-    }
-
-    onKappaChangedSetKappaVal(name, kappaValue) {
-        this.gasState.setKappa(kappaValue);
-    }
-
-    addListenerInput(listener) {
-        this.inputController.addListenerInput(listener);
-    }
-
-    addListenerUpdate(listener) {
-        this.inputController.addListenerUpdate(listener);
-    }
-
-    setCurrValueToGasState() {
-        let currVal = this.inputController.getValue();
-        this.gasState.setArgument(currVal);
     }
 }
 
@@ -851,7 +713,7 @@ class ControllerMachZoneSwitcher {
 }
 
 
-class ControllerFormGdf2 {
+class ControllerFormGdf {
     constructor() {
         this.nameVsGasState = new Map([
             ['mach', new GasStateByMach()],
@@ -873,7 +735,7 @@ class ControllerFormGdf2 {
         let inputs = document.getElementsByClassName("gdf_input");
         let properties = this.properties;
         let inputControllers = Array.from(inputs, function (input) {
-            return new ControllerInput2(input, properties, 'input');
+            return new ControllerInput(input, properties, 'input');
         });
         this.nameVsInputController = splitElementsBy('name', inputControllers);
     }
@@ -908,7 +770,7 @@ class ControllerFormGdf2 {
         for (let name of this.nameVsGasState.keys()) {
             let gasState = this.nameVsGasState.get(name);
             let inputController = this.nameVsInputController.get(name);
-            let gasStateController = new ControllerGasState2(inputController, gasState);
+            let gasStateController = new ControllerGasState(inputController, gasState);
             this.nameVsGasStateController.set(name, gasStateController);
             this.gasStateControllers.push(gasStateController);
         }
@@ -938,75 +800,10 @@ class ControllerFormGdf2 {
 
 }
 
-class ControllerFormGdf {
-    constructor() {
-        this.nameVsGasState = new Map([
-            ['mach', new GasStateByMach()],
-            ['lambda', new GasStateByLambda()],
-            ['pi', new GasStateByPi()],
-            ['tau', new GasStateByTau()],
-            ['epsilon', new GasStateByEpsilon()],
-            ['qu', new GasStateByQu()]
-        ]);
-        this.properties = new ControllerFormProperties();
-        this.initInputControllers();
-        this.initGasStateControllers();
-        this.initDependencies();
-        this.printDefaults();
-    }
-
-    initInputControllers() {
-        let inputs = document.getElementsByClassName("gdf_input");
-        let properties = this.properties;
-        let inputControllers = Array.from(inputs, function (input) {
-            return new ControllerInput(input, properties);
-        });
-        this.nameVsInputController = splitElementsBy('name', inputControllers);
-    }
-
-    initGasStateControllers() {
-        this.nameVsGasStateController = new Map();
-        this.gasStateControllers = [];
-        for (let name of this.nameVsGasState.keys()) {
-            let gasState = this.nameVsGasState.get(name);
-            let inputController = this.nameVsInputController.get(name);
-            let gasStateController = new ControllerGasState(this.properties, inputController, gasState);
-            this.nameVsGasStateController.set(name, gasStateController);
-            this.gasStateControllers.push(gasStateController);
-        }
-    }
-
-    initDependencies() {
-        this.gasStateControllers.forEach(function (controller, i, controllers) {
-            controller.setDependentControllers(controllers);
-        });
-        this.activeStateController = new ControllerActiveState(
-            this.nameVsInputController.get('kappa'), this.nameVsGasStateController, this.properties
-        );
-        this.machZoneSwitcher = new ControllerMachZoneSwitcher(
-            this.nameVsInputController.get('mach'), this.activeStateController, this.nameVsGasStateController.get('qu')
-        );
-    }
-
-    printDefaults() {
-        let defaultActiveName = this.activeStateController.activeName;
-        let defaultActiveState = this.nameVsGasState.get(defaultActiveName);
-        let defaultActiveController = this.nameVsGasStateController.get(defaultActiveName);
-        let kappaInput = this.nameVsInputController.get('kappa');
-        kappaInput.setFormattedValueToOutput(defaultActiveState.getKappa());
-        this.activeStateController.updateActiveDependent();
-        defaultActiveController.updateValueBy(defaultActiveState);
-    }
-
-}
-
 /*
     TODO 200525
-        1. format control
-            1.3 number of digit positions after dot
-            1.4 scientific representation
-        2. tooltips
-        3. graphs
+        1. tooltips
+        2. graphs
 */
 
-let controller = new ControllerFormGdf2();
+let controller = new ControllerFormGdf();

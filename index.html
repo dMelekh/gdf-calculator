@@ -38,7 +38,7 @@
                     <label class="setting_label" for="notation">output format</label>
                     <select class="setting_input" name="notation">
                         <option value="default">0.123 - default</option>
-                        <option value="scientific">1.23e-02 - scientific</option>
+                        <option value="scientific">1.23e-01 - scientific</option>
                     </select>
                 </div>
             </div> <!-- /container -->
@@ -50,7 +50,7 @@
             <div class="container">
                 <div class="function_block">
                     <label class="gdf_label" for="kappa">&#954</label>
-                    <input class="gdf_input" type="text" id="kappa" name="kappa" list="kappa_list" default="1.4" min="1.0" max="1.667" pattern="^\d?([\.,]?\d*)?$" />
+                    <input class="gdf_input" type="text" inputmode="numeric" id="kappa" name="kappa" list="kappa_list" default="1.4" min="1.0" max="1.667" pattern="^\d?([\.,]?\d*)?$" />
                     <datalist id="kappa_list">
                         <option value="1.4">
                         <option value="1.33">
@@ -59,27 +59,27 @@
                 </div>
                 <div class="function_block">
                     <label class="gdf_label" for="mach">M</label>
-                    <input class="gdf_input" type="text" pattern="^\d*([\.,]?\d*)?(e[-+]?\d*)?$|^Infinity$" id="mach" name="mach" />
+                    <input class="gdf_input" type="text" inputmode="numeric" pattern="^\d*([\.,]?\d*)?(e[-+]?\d*)?$" id="mach" name="mach" />
                 </div>
                 <div class="function_block">
                     <label class="gdf_label" for="lambda">&#955</label>
-                    <input class="gdf_input" type="text" pattern="^\d?([\.,]?\d*)?(e[-+]?\d*)?$" id="lambda" name="lambda" />
+                    <input class="gdf_input" type="text" inputmode="numeric" pattern="^\d?([\.,]?\d*)?(e[-+]?\d*)?$" id="lambda" name="lambda" />
                 </div>
                 <div class="function_block">
                     <label class="gdf_label" for="pi">&#960</label>
-                    <input class="gdf_input" type="text" pattern="^\d?([\.,]?\d*)?e?(-?\d*|\+?0?)?$" id="pi" name="pi" />
+                    <input class="gdf_input" type="text" inputmode="numeric" pattern="^\d?([\.,]?\d*)?e?(-?\d*|\+?0?)?$" id="pi" name="pi" />
                 </div>
                 <div class="function_block">
                     <label class="gdf_label" for="tau">&#964</label>
-                    <input class="gdf_input" type="text" pattern="^\d?([\.,]?\d*)?e?(-?\d*|\+?0?)?$" id="tau" name="tau" />
+                    <input class="gdf_input" type="text" inputmode="numeric" pattern="^\d?([\.,]?\d*)?e?(-?\d*|\+?0?)?$" id="tau" name="tau" />
                 </div>
                 <div class="function_block">
                     <label class="gdf_label" for="epsilon">&#949</label>
-                    <input class="gdf_input" type="text" pattern="^\d?([\.,]?\d*)?e?(-?\d*|\+?0?)?$" id="epsilon" name="epsilon" />
+                    <input class="gdf_input" type="text" inputmode="numeric" pattern="^\d?([\.,]?\d*)?e?(-?\d*|\+?0?)?$" id="epsilon" name="epsilon" />
                 </div>
                 <div class="function_block">
                     <label class="gdf_label" for="qu">q</label>
-                    <input class="gdf_input" type="text" pattern="^\d?([\.,]?\d*)?e?(-?\d*|\+?0?)?$" id="qu" name="qu" />
+                    <input class="gdf_input" type="text" inputmode="numeric" pattern="^\d?([\.,]?\d*)?e?(-?\d*|\+?0?)?$" id="qu" name="qu" />
                     <div class="mach_area">
                         <input type="radio" id="subsound" name="flow_speed" value="subsound">
                         <label for="subsound">M &#8804 1</label><br> <!-- &lt -->
