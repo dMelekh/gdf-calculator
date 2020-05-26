@@ -325,7 +325,7 @@ class ControllerFormProperties {
         let inputs = document.getElementsByClassName("setting_input");
         this.nameVsInput = splitElementsBy('name', inputs);
     }
-
+    
     formatValue(value) {
         let mantissaSize = +this.nameVsInput.get('mantissa_size').value;
         let notation = this.nameVsInput.get('notation').value;
@@ -571,6 +571,66 @@ class ControllerInput {
     }
 }
 
+class ControllerGasState2 {
+    constructor(inputController, gasState) {
+        this.inputController = inputController;
+        this.argGetterName = getterByName[inputController.name];
+        this.gasState = gasState;
+        this.dependentControllers = [];
+        this.initEvents();
+    }
+    
+    initEvents() {
+        let onCurrArgInput = this.onCurrArgInput.bind(this);
+        this.inputController.addListenerInput(onCurrArgInput);
+    }
+    
+    onCurrArgInput(name, value) {
+        this.gasState.setArgument(+value);
+        this.updateDependentControllers();
+    }
+
+    setDependentControllers(allControllers) {
+        let thisController = this;
+        this.dependentControllers = allControllers.filter(function (item) {
+            return item !== thisController;
+        });
+    }
+
+    updateDependentControllers() {
+        for (let dependent of this.dependentControllers) {
+            dependent.updateValueBy(this.gasState);
+        }
+    }
+
+    updateValueBy(currGasState) {
+        let newVal = currGasState[this.argGetterName]();
+        this.inputController.setValue(newVal);
+    }
+
+    bindKappaInputController(kappaInputController) {
+        let onKappaChangedSetKappaVal = this.onKappaChangedSetKappaVal.bind(this);
+        kappaInputController.addListenerInput(onKappaChangedSetKappaVal);
+    }
+
+    onKappaChangedSetKappaVal(name, kappaValue) {
+        this.gasState.setKappa(kappaValue);
+    }
+
+    addListenerInput(listener) {
+        this.inputController.addListenerInput(listener);
+    }
+
+    addListenerUpdate(listener) {
+        this.inputController.addListenerUpdate(listener);
+    }
+
+    setCurrValueToGasState() {
+        let currVal = this.inputController.getValue();
+        this.gasState.setArgument(currVal);
+    }
+}
+
 class ControllerGasState {
     constructor(properties, inputController, gasState) {
         this.inputController = inputController;
@@ -628,7 +688,7 @@ class ControllerGasState {
         this.inputController.setFormattedValueToOutput(formatted);
     }
 
-    bindActiveStateController(kappaInputController) {
+    bindKappaInputController(kappaInputController) {
         let onKappaChangedSetKappaVal = this.onKappaChangedSetKappaVal.bind(this);
         kappaInputController.addListenerInput(onKappaChangedSetKappaVal);
     }
@@ -663,7 +723,7 @@ class ControllerActiveState {
     initListeners() {
         let onGasFunctionInputSetActive = this.onGasFunctionInputSetActive.bind(this);
         for (let controller of this.nameVsGasStateController.values()) {
-            controller.bindActiveStateController(this.kappaInputController);
+            controller.bindKappaInputController(this.kappaInputController);
             controller.addListenerInput(onGasFunctionInputSetActive);
         }
         let onKappaChangedUpdateFields = this.onKappaChangedUpdateFields.bind(this);
