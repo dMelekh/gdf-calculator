@@ -325,7 +325,7 @@ class ControllerFormProperties {
         let inputs = document.getElementsByClassName("setting_input");
         this.nameVsInput = splitElementsBy('name', inputs);
     }
-    
+
     formatValue(value) {
         let mantissaSize = +this.nameVsInput.get('mantissa_size').value;
         let notation = this.nameVsInput.get('notation').value;
@@ -333,22 +333,169 @@ class ControllerFormProperties {
         if (notation == 'scientific') {
             formattedValue = (+value).toExponential(mantissaSize);
         } else {
-//            let intPartSize = Math.trunc(Math.log10(+value)) + 1;
+            //            let intPartSize = Math.trunc(Math.log10(+value)) + 1;
             formattedValue = +value.toFixed(mantissaSize);
         }
         formattedValue = this.replaceSeparator(formattedValue);
         return formattedValue;
     }
-    
+
     replaceSeparator(value) {
         let separator = this.nameVsInput.get('decimal_separator').value;
         return value.toString().replace(/[\.\,]/g, separator);
     }
-    
+
     addListenerFormatChanged(listener) {
         for (let input of this.nameVsInput.values()) {
             input.addEventListener('change', listener);
         }
+    }
+}
+
+class ControllerInput2 {
+    //  listener is a method
+    constructor(input) {
+        this.input = input;
+        this.name = input.name;
+        this.listenersInput = [];
+        this.listenersUpdate = [];
+        this.limitersInput = [];
+        this.limitersOutput = [];
+        this.currValue = '';
+        this.prevValue = '';
+        this.initEvents();
+    }
+
+    initEvents() {
+        let signalInput = this.signalInput.bind(this);
+        this.input.addEventListener('input', signalInput);
+    }
+
+    signalInput() {
+        this.currValue = this.input.value;
+        for (let limiter of this.limitersInput) {
+            this.currValue = limiter.limit(this.prevValue, this.currValue);
+        }
+        for (let listener of this.listenersInput) {
+            listener(this.name, this.currValue);
+        }
+        this.prevValue = this.currValue;
+        this.displayCurrVal();        
+    }
+
+    getValue() {
+        return this.currValue;
+    }
+    
+    setValue(value) {
+        this.prevValue = value;
+        this.currValue = value;
+        this.displayCurrVal();
+        this.signalUpdate();
+    }
+    
+    displayCurrVal() {
+        let valForDisplay = this.currValue;
+        for (let limiter of this.limitersOutput) {
+            valForDisplay = limiter.limit(valForDisplay);
+        }
+        this.input.value = valForDisplay;
+    }
+    
+    signalUpdate() {
+        for (let listener of this.listenersUpdate) {
+            listener(this.name, this.value);
+        }
+    }
+
+    addListenerInput(listener) {
+        this.listenersInput.push(listener);
+    }
+    
+    addListenerUpdate(listener) {
+        this.listenersUpdate.push(listener);
+    }
+    
+    addLimiterInput(limiter) {
+        this.limitersInput.push(limiter);
+    }
+    
+    addLimitersOutput(limiter) {
+        this.limitersOutput.push(limiter);
+    }
+}
+
+class LimiterInputOfHtmlPattern {
+    constructor(input) {
+        this.pattern = new RegExp(input.pattern);
+    }
+    
+    limit(prev, curr) {
+        if (this.pattern.test(curr)) {
+            return curr;
+        }
+        return prev;
+    }
+}
+
+class LimiterInputOfHtmlValue {
+    constructor(input) {
+        this.min = +input.min;
+        this.max = +input.max;
+    }
+    
+    limit(prev, curr) {
+        let currVal = +curr;
+        if (curr <= this.max && curr >= this.min) {
+            return currVal;
+        }
+        return +prev;
+    }
+}
+
+class LimiterInputOfModelValue {
+    constructor(model) {
+        this.model = model;
+    }
+    
+    limit(prev, curr) {
+        let currVal = +curr;
+        if (currVal < this.model.getArgMin()) {
+            return this.model.getArgMin();
+        }
+        if (currVal > this.model.getArgMax()) {
+            return this.model.getArgMax();
+        }
+        return currVal;
+    }
+}
+
+class LimiterInputOfDecimalSeparator {
+    constructor() {
+    }
+    
+    limit(prev, curr) {
+        return curr.replace(/[\.\,]/g, '\.');
+    }
+}
+
+class LimiterOuputOfDecimalSeparator {
+    constructor(properties) {
+        this.properties = properties;
+    }
+    
+    limit(curr) {
+        return this.properties.replaceSeparator(curr);
+    }
+}
+
+class LimiterOutputOfFloatRepresentation {
+    constructor(properties) {
+        this.properties = properties;
+    }
+    
+    limit(curr) {
+        return this.properties.formatValue(curr);
     }
 }
 
@@ -383,7 +530,7 @@ class ControllerInput {
     }
 
     checkFormat() {
-//        console.log(this.input.value, this.prevValue, this.pattern.test(this.input.value) );
+        //        console.log(this.input.value, this.prevValue, this.pattern.test(this.input.value) );
         if (this.pattern.test(this.input.value)) {
             this.prevValue = this.input.value;
             return true;
@@ -391,11 +538,11 @@ class ControllerInput {
         this.input.value = this.prevValue;
         return false;
     }
-    
+
     updateSeparatorOnOutput() {
         this.input.value = this.properties.replaceSeparator(this.input.value);
     }
-    
+
     getValue() {
         return this.input.value.replace(/[\.\,]/g, '\.');
     }
@@ -470,13 +617,13 @@ class ControllerGasState {
         let newVal = currGasState[this.argGetterName]();
         this.setValueToOutput(newVal);
     }
-    
+
     setValueToOutput(val) {
-//        kappa does not use formatted output
-//          - so ControllerFormProperties usage depends on ControllerGasState implementation
-//            (heigher level than ControllerInput, not every ControllerInput uses it)
-//        but ControllerInput uses decimal separator - so it also has ControllerFormProperties ref
-//          and update of decimal separator on properties change is also part of ControllerInput
+        //        kappa does not use formatted output
+        //          - so ControllerFormProperties usage depends on ControllerGasState implementation
+        //            (heigher level than ControllerInput, not every ControllerInput uses it)
+        //        but ControllerInput uses decimal separator - so it also has ControllerFormProperties ref
+        //          and update of decimal separator on properties change is also part of ControllerInput
         let formatted = this.properties.formatValue(val);
         this.inputController.setFormattedValueToOutput(formatted);
     }
@@ -529,15 +676,15 @@ class ControllerActiveState {
         this.activeController().setCurrValueToGasState();
         this.updateActiveDependent();
     }
-    
+
     onPropertiesChanged() {
         this.updateActiveDependent();
     }
-    
+
     updateActiveDependent() {
         this.activeController().updateDependentControllers();
     }
-    
+
     activeController() {
         return this.nameVsGasStateController.get(this.activeName);
     }
