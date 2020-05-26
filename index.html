@@ -24,7 +24,7 @@
             <div class="container">
                 <div class="input_block">
                     <label class="setting_label" for="mantissa_size">mantissa size</label>
-                    <input class="setting_input" name="mantissa_size" type="number" min="2" max="10" value="5"></input>
+                    <input class="setting_input" name="mantissa_size" type="number" min="2" max="11" value="5"></input>
                 </div>
 
                 <div class="input_block">
@@ -50,7 +50,7 @@
             <div class="container">
                 <div class="function_block">
                     <label class="gdf_label" for="kappa">&#954</label>
-                    <input class="gdf_input" type="text" id="kappa" name="kappa" list="kappa_list" default="1.4" pattern="^\d?([\.,]?\d*)?$" />
+                    <input class="gdf_input" type="text" id="kappa" name="kappa" list="kappa_list" default="1.4" min="1.0" max="1.667" pattern="^\d?([\.,]?\d*)?$" />
                     <datalist id="kappa_list">
                         <option value="1.4">
                         <option value="1.33">

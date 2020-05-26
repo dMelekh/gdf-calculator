@@ -324,8 +324,17 @@ class ControllerFormProperties {
     constructor() {
         let inputs = document.getElementsByClassName("setting_input");
         this.nameVsInput = splitElementsBy('name', inputs);
+//        this.regexDelTrailZeros = new RegExp('0*(e[+-]0*)?$');
+        this.regexDelTrailZeros = new RegExp('([\.,]?0+)?(e[+-]0+)?$');
+        this.initMantissaSizeInput();
     }
     
+    initMantissaSizeInput() {
+        let mantissaInput = this.nameVsInput.get('mantissa_size');
+        this.mantissaInputController = new ControllerInput2(mantissaInput, this, 'change');
+        this.mantissaInputController.addLimiterInput(new LimiterInputOfHtmlValue(mantissaInput));
+    }
+
     formatValue(value) {
         let mantissaSize = +this.nameVsInput.get('mantissa_size').value;
         let notation = this.nameVsInput.get('notation').value;
@@ -334,9 +343,10 @@ class ControllerFormProperties {
             formattedValue = (+value).toExponential(mantissaSize);
         } else {
             //            let intPartSize = Math.trunc(Math.log10(+value)) + 1;
-            formattedValue = +value.toFixed(mantissaSize);
+            formattedValue = (+value).toFixed(mantissaSize);
         }
         formattedValue = this.replaceSeparator(formattedValue);
+        formattedValue = formattedValue.replace(this.regexDelTrailZeros, '');
         return formattedValue;
     }
 
@@ -354,21 +364,26 @@ class ControllerFormProperties {
 
 class ControllerInput2 {
     //  listener is a method
-    constructor(input) {
+    constructor(input, properties, inputTypeInputOrChange) {
         this.input = input;
+        this.inputType = inputTypeInputOrChange;
         this.name = input.name;
+        this.properties = properties;
         this.listenersInput = [];
         this.listenersUpdate = [];
         this.limitersInput = [];
+        this.limitersOutOnInput = [];
         this.limitersOutput = [];
-        this.currValue = '';
-        this.prevValue = '';
+        this.currValue = this.input.value;
+        this.prevValue = this.input.value;
         this.initEvents();
     }
 
     initEvents() {
         let signalInput = this.signalInput.bind(this);
-        this.input.addEventListener('input', signalInput);
+        this.input.addEventListener(this.inputType, signalInput);
+        let displayCurrVal = this.displayCurrVal.bind(this);
+        this.properties.addListenerFormatChanged(displayCurrVal);
     }
 
     signalInput() {
@@ -380,47 +395,59 @@ class ControllerInput2 {
             listener(this.name, this.currValue);
         }
         this.prevValue = this.currValue;
-        this.displayCurrVal();        
+        this.displayCurrValWith(this.limitersOutOnInput);
     }
 
     getValue() {
         return this.currValue;
     }
-    
+
+    getInput() {
+        return this.input;
+    }
+
     setValue(value) {
-        this.prevValue = value;
         this.currValue = value;
         this.displayCurrVal();
+        this.prevValue = this.input.value;
         this.signalUpdate();
     }
     
     displayCurrVal() {
+        this.displayCurrValWith(this.limitersOutput);
+    }
+
+    displayCurrValWith(limiters) {
         let valForDisplay = this.currValue;
-        for (let limiter of this.limitersOutput) {
+        for (let limiter of limiters) {
             valForDisplay = limiter.limit(valForDisplay);
         }
         this.input.value = valForDisplay;
     }
-    
+
     signalUpdate() {
         for (let listener of this.listenersUpdate) {
-            listener(this.name, this.value);
+            listener(this.name, this.currValue);
         }
     }
 
     addListenerInput(listener) {
         this.listenersInput.push(listener);
     }
-    
+
     addListenerUpdate(listener) {
         this.listenersUpdate.push(listener);
     }
-    
+
     addLimiterInput(limiter) {
         this.limitersInput.push(limiter);
     }
     
-    addLimitersOutput(limiter) {
+    addLimiterOutOnInput(limiter) {
+        this.limitersOutOnInput.push(limiter);
+    }
+
+    addLimiterOutput(limiter) {
         this.limitersOutput.push(limiter);
     }
 }
@@ -429,7 +456,7 @@ class LimiterInputOfHtmlPattern {
     constructor(input) {
         this.pattern = new RegExp(input.pattern);
     }
-    
+
     limit(prev, curr) {
         if (this.pattern.test(curr)) {
             return curr;
@@ -443,13 +470,16 @@ class LimiterInputOfHtmlValue {
         this.min = +input.min;
         this.max = +input.max;
     }
-    
+
     limit(prev, curr) {
         let currVal = +curr;
-        if (curr <= this.max && curr >= this.min) {
-            return currVal;
+        if (currVal < this.min) {
+            return this.min;
         }
-        return +prev;
+        if (currVal > this.max) {
+            return this.max;
+        }
+        return curr;
     }
 }
 
@@ -457,33 +487,32 @@ class LimiterInputOfModelValue {
     constructor(model) {
         this.model = model;
     }
-    
+
     limit(prev, curr) {
         let currVal = +curr;
         if (currVal < this.model.getArgMin()) {
-            return this.model.getArgMin();
+            return this.model.getArgMin().toString();
         }
         if (currVal > this.model.getArgMax()) {
-            return this.model.getArgMax();
+            return this.model.getArgMax().toString();
         }
-        return currVal;
+        return curr;
     }
 }
 
 class LimiterInputOfDecimalSeparator {
-    constructor() {
-    }
-    
+    constructor() {}
+
     limit(prev, curr) {
         return curr.replace(/[\.\,]/g, '\.');
     }
 }
 
-class LimiterOuputOfDecimalSeparator {
+class LimiterOutputOfDecimalSeparator {
     constructor(properties) {
         this.properties = properties;
     }
-    
+
     limit(curr) {
         return this.properties.replaceSeparator(curr);
     }
@@ -493,7 +522,7 @@ class LimiterOutputOfFloatRepresentation {
     constructor(properties) {
         this.properties = properties;
     }
-    
+
     limit(curr) {
         return this.properties.formatValue(curr);
     }
@@ -530,7 +559,6 @@ class ControllerInput {
     }
 
     checkFormat() {
-        //        console.log(this.input.value, this.prevValue, this.pattern.test(this.input.value) );
         if (this.pattern.test(this.input.value)) {
             this.prevValue = this.input.value;
             return true;
@@ -579,12 +607,12 @@ class ControllerGasState2 {
         this.dependentControllers = [];
         this.initEvents();
     }
-    
+
     initEvents() {
         let onCurrArgInput = this.onCurrArgInput.bind(this);
         this.inputController.addListenerInput(onCurrArgInput);
     }
-    
+
     onCurrArgInput(name, value) {
         this.gasState.setArgument(+value);
         this.updateDependentControllers();
@@ -626,8 +654,7 @@ class ControllerGasState2 {
     }
 
     setCurrValueToGasState() {
-        let currVal = this.inputController.getValue();
-        this.gasState.setArgument(currVal);
+        this.inputController.signalInput();
     }
 }
 
@@ -679,11 +706,6 @@ class ControllerGasState {
     }
 
     setValueToOutput(val) {
-        //        kappa does not use formatted output
-        //          - so ControllerFormProperties usage depends on ControllerGasState implementation
-        //            (heigher level than ControllerInput, not every ControllerInput uses it)
-        //        but ControllerInput uses decimal separator - so it also has ControllerFormProperties ref
-        //          and update of decimal separator on properties change is also part of ControllerInput
         let formatted = this.properties.formatValue(val);
         this.inputController.setFormattedValueToOutput(formatted);
     }
@@ -828,6 +850,94 @@ class ControllerMachZoneSwitcher {
     }
 }
 
+
+class ControllerFormGdf2 {
+    constructor() {
+        this.nameVsGasState = new Map([
+            ['mach', new GasStateByMach()],
+            ['lambda', new GasStateByLambda()],
+            ['pi', new GasStateByPi()],
+            ['tau', new GasStateByTau()],
+            ['epsilon', new GasStateByEpsilon()],
+            ['qu', new GasStateByQu()]
+        ]);
+        this.properties = new ControllerFormProperties();
+        this.initInputControllers();
+        this.initLimiters();
+        this.initGasStateControllers();
+        this.initDependencies();
+        this.printDefaults();
+    }
+
+    initInputControllers() {
+        let inputs = document.getElementsByClassName("gdf_input");
+        let properties = this.properties;
+        let inputControllers = Array.from(inputs, function (input) {
+            return new ControllerInput2(input, properties, 'input');
+        });
+        this.nameVsInputController = splitElementsBy('name', inputControllers);
+    }
+
+    initLimiters() {
+        let limiterInputOfDecimalSeparator = new LimiterInputOfDecimalSeparator();
+        let limiterOutputOfDecimalSeparator = new LimiterOutputOfDecimalSeparator(this.properties);
+        let limiterOutputOfFloatRepresentation = new LimiterOutputOfFloatRepresentation(this.properties);
+
+        for (let [name, model] of this.nameVsGasState.entries()) {
+            let inputController = this.nameVsInputController.get(name);
+            let input = inputController.getInput();
+            inputController.addLimiterInput(new LimiterInputOfHtmlPattern(input));
+            inputController.addLimiterInput(limiterInputOfDecimalSeparator);
+            inputController.addLimiterInput(new LimiterInputOfModelValue(model));
+            inputController.addLimiterOutOnInput(limiterOutputOfDecimalSeparator);
+            inputController.addLimiterOutput(limiterOutputOfFloatRepresentation);
+        }
+        
+        let kappaInputController = this.nameVsInputController.get('kappa');
+        let kappaInput = kappaInputController.getInput();
+        kappaInputController.addLimiterInput(new LimiterInputOfHtmlPattern(kappaInput));
+        kappaInputController.addLimiterInput(limiterInputOfDecimalSeparator);
+        kappaInputController.addLimiterInput(new LimiterInputOfHtmlValue(kappaInput));
+        kappaInputController.addLimiterOutOnInput(limiterOutputOfDecimalSeparator);
+        kappaInputController.addLimiterOutput(limiterOutputOfDecimalSeparator);
+    }
+
+    initGasStateControllers() {
+        this.nameVsGasStateController = new Map();
+        this.gasStateControllers = [];
+        for (let name of this.nameVsGasState.keys()) {
+            let gasState = this.nameVsGasState.get(name);
+            let inputController = this.nameVsInputController.get(name);
+            let gasStateController = new ControllerGasState2(inputController, gasState);
+            this.nameVsGasStateController.set(name, gasStateController);
+            this.gasStateControllers.push(gasStateController);
+        }
+    }
+
+    initDependencies() {
+        this.gasStateControllers.forEach(function (controller, i, controllers) {
+            controller.setDependentControllers(controllers);
+        });
+        this.activeStateController = new ControllerActiveState(
+            this.nameVsInputController.get('kappa'), this.nameVsGasStateController, this.properties
+        );
+        this.machZoneSwitcher = new ControllerMachZoneSwitcher(
+            this.nameVsInputController.get('mach'), this.activeStateController, this.nameVsGasStateController.get('qu')
+        );
+    }
+
+    printDefaults() {
+        let defaultActiveName = this.activeStateController.activeName;
+        let defaultActiveState = this.nameVsGasState.get(defaultActiveName);
+        let defaultActiveController = this.nameVsGasStateController.get(defaultActiveName);
+        let kappaInput = this.nameVsInputController.get('kappa');
+        kappaInput.setValue(defaultActiveState.getKappa());
+        this.activeStateController.updateActiveDependent();
+        defaultActiveController.updateValueBy(defaultActiveState);
+    }
+
+}
+
 class ControllerFormGdf {
     constructor() {
         this.nameVsGasState = new Map([
@@ -899,4 +1009,4 @@ class ControllerFormGdf {
         3. graphs
 */
 
-let controller = new ControllerFormGdf();
+let controller = new ControllerFormGdf2();
