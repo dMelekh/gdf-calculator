@@ -61,7 +61,8 @@ body {
     background-color: #45a049;
 }
 
-.tab_content {
+.tab_content,
+.tab_about {
     width: 70%;
     max-width: 500px;
     min-width: 175px;
@@ -72,7 +73,7 @@ body {
     padding: 1em 0;
 }
 
-header {
+.tab_header {
     text-align: center;
     background-color: aliceblue;
 /*    margin: 3% 0;*/
@@ -81,6 +82,11 @@ header {
 
 .container {
     margin: 2% 5% 0;
+}
+
+.function_block {
+	text-align: right;
+	margin-right: 4%;
 }
 
 .gdf_input,
@@ -92,8 +98,12 @@ header {
 }
 
 .gdf_input {
-    width: 90%;
+    width: 91%;
     margin-bottom: 1%;
+}
+
+.gdf_input_kappa {
+	width: 45%;
 }
 
 .setting_input {
@@ -107,12 +117,32 @@ header {
 }
 
 .gdf_label {
-    width: 5%;
+	margin-right: 2%;
+    width: 4%;
     text-align: right;
 }
 
 .mach_area {
-    margin-left: 5%;
+    margin-left: 7%;
+	text-align: left;
+}
+
+.about_article {
+	padding: 1em;
+	margin: 0 0 1em;
+	background-color: floralwhite;
+	border-radius: 1em;
+}
+
+.about_article_header {
+	font-style: italic;
+	display: block;
+}
+
+.definitions_list {
+	margin-top: 0.03em;
+	margin-bottom: 0;
+	list-style-type: circle;
 }
 
 @media screen and (max-width: 700px) {
@@ -133,12 +163,5 @@ header {
     
     .header {
         display: none;
-    }
-}
-
-@media screen and (max-width: 400px) {
-    .tab {
-        text-align: center;
-        float: none;
     }
 }
