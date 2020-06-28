@@ -1,3 +1,4 @@
+
 function getArgByHalfMethod(fun, trgtFunVal, xLimLeft, xLimRight, accuracy) {
     let acc = accuracy !== undefined ? accuracy : 1e-9;
     let yLeft = fun(xLimLeft),
@@ -37,20 +38,8 @@ function splitElementsBy(elementFieldName, elements) {
 
 class GasStateByMach {
     constructor() {
-        this.kappa = 1.4; // kappa = 1.4 for normal air
+        this.kappa = 1.4;
         this.mach = 1.0;
-    }
-
-    setKappa(kappa) {
-        this.kappa = +kappa;
-    }
-
-    getKappa() {
-        return this.kappa;
-    }
-
-    setArgument(mach) {
-        this.mach = +mach;
     }
 
     getArgMin() {
@@ -61,6 +50,14 @@ class GasStateByMach {
         return Infinity;
     }
 
+    setArgument(mach) {
+        this.mach = +mach;
+    }
+    
+    getArgFieldName() {
+        return 'mach';
+    }
+    
     getMach() {
         return this.mach;
     }
@@ -70,8 +67,8 @@ class GasStateByMach {
     }
 
     getLambda() {
-        //        return Math.sqrt(Math.pow(this.getMach(),2.)*(this.kappa+1.)/2./(1.+(this.kappa-1.)/2.*Math.pow(this.getMach(),2.)));
-        return Math.sqrt(Math.pow(this.getMach(), 2) * (this.kappa + 1) / 2 / (1 + (this.kappa - 1) / 2 * Math.pow(this.getMach(), 2)));
+        //        return Math.sqrt(Math.pow(this.mach,2.)*(this.kappa+1.)/2./(1.+(this.kappa-1.)/2.*Math.pow(this.mach,2.)));
+        return Math.sqrt(Math.pow(this.mach, 2) * (this.kappa + 1) / 2 / (1 + (this.kappa - 1) / 2 * Math.pow(this.mach, 2)));
     }
 
     getPi() {
@@ -95,28 +92,15 @@ class GasStateByMach {
     }
 
     getTauInverse() {
-        return 1.0 + (this.kappa - 1.0) / 2.0 * Math.pow(this.getMach(), 2.0);
+        return 1.0 + (this.kappa - 1.0) / 2.0 * Math.pow(this.mach, 2.0);
     }
 
 }
 
 class GasStateByLambda {
-
     constructor() {
-        this.kappa = 1.4; // kappa = 1.4 for normal air
+        this.kappa = 1.4;
         this.lambda = 1.0;
-    }
-
-    setKappa(kappa) {
-        this.kappa = +kappa;
-    }
-
-    getKappa() {
-        return this.kappa;
-    }
-
-    setArgument(lambda) {
-        this.lambda = +lambda;
     }
 
     getArgMin() {
@@ -127,16 +111,24 @@ class GasStateByLambda {
         return this.getLambdaMax();
     }
 
-    getLambdaMax() {
-        return Math.sqrt((this.kappa + 1.0) / (this.kappa - 1.0));
+    setArgument(lambda) {
+        this.lambda = +lambda;
     }
-
+    
+    getArgFieldName() {
+        return 'lambda';
+    }
+    
     getLambda() {
         return this.lambda;
     }
 
+    getLambdaMax() {
+        return Math.sqrt((this.kappa + 1.0) / (this.kappa - 1.0));
+    }
+
     getMach() {
-        return Math.sqrt(2.0 * Math.pow(this.getLambda(), 2.0) / (this.kappa + 1.0 - Math.pow(this.getLambda(), 2.0) * (this.kappa - 1.0)));
+        return Math.sqrt(2.0 * Math.pow(this.lambda, 2.0) / (this.kappa + 1.0 - Math.pow(this.lambda, 2.0) * (this.kappa - 1.0)));
     }
 
     getPi() {
@@ -148,11 +140,11 @@ class GasStateByLambda {
     }
 
     getTau() {
-        return 1.0 - (this.kappa - 1.0) / (this.kappa + 1.0) * Math.pow(this.getLambda(), 2.0);
+        return 1.0 - (this.kappa - 1.0) / (this.kappa + 1.0) * Math.pow(this.lambda, 2.0);
     }
 
     getQu() {
-        return this.getLambda() * this.getEpsilon() * Math.pow((this.kappa + 1.0) / 2.0, 1.0 / (this.kappa - 1.0));
+        return this.lambda * this.getEpsilon() * Math.pow((this.kappa + 1.0) / 2.0, 1.0 / (this.kappa - 1.0));
     }
 }
 
@@ -160,12 +152,6 @@ class GasStateByLambda {
 class GasStateDelegate {
     constructor(wrappedState) {
         this.wrappedState = wrappedState;
-    }
-    setKappa(kappa) {
-        this.wrappedState.setKappa(kappa);
-    }
-    getKappa() {
-        return this.wrappedState.getKappa();
     }
     getMach() {
         return this.wrappedState.getMach();
@@ -185,11 +171,9 @@ class GasStateDelegate {
     getQu() {
         return this.wrappedState.getQu();
     }
-
     getArgMin() {
         return 0.0;
     }
-
     getArgMax() {
         return 1.0;
     }
@@ -198,7 +182,6 @@ class GasStateDelegate {
 class GasStateByQu extends GasStateDelegate {
     constructor() {
         super(new GasStateByLambda());
-        this.qu = this.getQu();
         this.funQuByLambda = function (lambda) {
             this.setArgument(lambda);
             return this.getQu();
@@ -223,7 +206,11 @@ class GasStateByQu extends GasStateDelegate {
             getArgByHalfMethod(this.funQuByLambda, this.qu, this.leftLyambda, this.rightLyambda)
         );
     }
-
+    
+    getArgFieldName() {
+        return 'qu';
+    }
+    
     getQu() {
         return this.qu;
     }
@@ -238,11 +225,15 @@ class GasStateByPi extends GasStateDelegate {
     setArgument(pi) {
         this.pi = +pi;
         this.wrappedState.setArgument(
-            //            this._getMach(this.getKappa(), this.pi)
-            this._getLambda(this.getKappa(), this.pi)
+            //            this._getMach(this.kappa, this.pi)
+            this._getLambda(this.kappa, this.pi)
         );
     }
-
+    
+    getArgFieldName() {
+        return 'pi';
+    }
+    
     _getMach(k, pi) {
         return Math.sqrt((Math.pow(1.0 / pi, (k - 1.0) / k) - 1.0) * 2.0 / (k - 1.0));
     }
@@ -265,11 +256,15 @@ class GasStateByTau extends GasStateDelegate {
     setArgument(tau) {
         this.tau = +tau;
         this.wrappedState.setArgument(
-            //            this._getMach(this.getKappa(), this.tau)
-            this._getLambda(this.getKappa(), this.tau)
+            //            this._getMach(this.kappa, this.tau)
+            this._getLambda(this.kappa, this.tau)
         );
     }
-
+    
+    getArgFieldName() {
+        return 'tau';
+    }
+    
     _getMach(k, tau) {
         return Math.sqrt((1.0 / tau - 1.0) * 2.0 / (k - 1.0));
     }
@@ -293,8 +288,12 @@ class GasStateByEpsilon extends GasStateDelegate {
     setArgument(epsilon) {
         this.epsilon = +epsilon;
         this.wrappedState.setArgument(
-            this._getLambda(this.getKappa(), this.epsilon)
+            this._getLambda(this.kappa, this.epsilon)
         );
+    }
+    
+    getArgFieldName() {
+        return 'epsilon';
     }
 
     _getMach(k, epsilon) {
@@ -307,6 +306,69 @@ class GasStateByEpsilon extends GasStateDelegate {
 
     getEpsilon() {
         return this.epsilon;
+    }
+}
+
+class GasStateUpdater {
+    constructor(fieldsAndGetters) {
+        this.fieldsAndGetters = fieldsAndGetters;
+    }
+
+    update(state, methodsOwner) {
+        methodsOwner.kappa = +state.get('kappa');
+        let argFieldName = methodsOwner.getArgFieldName(); // cache
+        let actualArgVal = state.get(argFieldName);
+        methodsOwner.setArgument(actualArgVal);
+        for (let [fieldName, getterName] of this.fieldsAndGetters.entries()) {
+            state.set(fieldName, methodsOwner[getterName]());
+        }
+        state.set(argFieldName, actualArgVal); // cache
+        return state;
+    }
+}
+
+class Model {
+    constructor() {
+        this.nameVsGasStateProcessor = new Map([
+            ['mach', new GasStateByMach()],
+            ['lambda', new GasStateByLambda()],
+            ['pi', new GasStateByPi()],
+            ['tau', new GasStateByTau()],
+            ['epsilon', new GasStateByEpsilon()],
+            ['qu', new GasStateByQu()]
+        ]);
+        this.gasStateUpdater = new GasStateUpdater(new Map([
+            ['mach', 'getMach'],
+            ['lambda', 'getLambda'],
+            ['pi', 'getPi'],
+            ['tau', 'getTau'],
+            ['epsilon', 'getEpsilon'],
+            ['qu', 'getQu']
+        ]));
+        this.gasState = new Map();
+        this.setField('mach', 1.0);
+        this.maxKappaVal = 5./3.;  // https://en.wikipedia.org/wiki/Heat_capacity_ratio
+    }
+
+    setField(name, value) {
+        this.gasState.set(name, value);
+        this.activeStateProcessor = this.nameVsGasStateProcessor.get(name);
+    }
+    
+    setKappa(value) {
+        this.gasState.set('kappa', value);
+        let kappaVal = +value;
+        if (kappaVal < 1.0) {
+            this.gasState.set('kappa', '1.0');
+        }
+        if (kappaVal > this.maxKappaVal) {
+            this.gasState.set('kappa', this.maxKappaVal);
+        }
+    }
+    
+    getActiveState() {
+        this.gasStateUpdater.update(this.gasState, this.activeStateProcessor);
+        return this.gasState;
     }
 }
 
@@ -327,7 +389,7 @@ class ControllerFormProperties {
         this.regexDelTrailZeros = new RegExp('([\.,]?0+)?(e[+-]0+)?$');
         this.initMantissaSizeInput();
     }
-    
+
     initMantissaSizeInput() {
         let mantissaInput = this.nameVsInput.get('mantissa_size');
         this.mantissaInputController = new ControllerInput(mantissaInput, this, 'change');
@@ -414,13 +476,13 @@ class ControllerInput {
         this.verifyPrevValue();
         this.signalUpdate();
     }
-    
+
     verifyPrevValue() {
         for (let limiter of this.limitersInput) {
             this.prevValue = limiter.limit('', this.prevValue);
         }
     }
-    
+
     displayCurrVal() {
         this.displayCurrValWith(this.limitersOutput);
     }
@@ -450,7 +512,7 @@ class ControllerInput {
     addLimiterInput(limiter) {
         this.limitersInput.push(limiter);
     }
-    
+
     addLimiterOutOnInput(limiter) {
         this.limitersOutOnInput.push(limiter);
     }
@@ -713,6 +775,44 @@ class ControllerMachZoneSwitcher {
 }
 
 
+class ControllerFormGdf2 {
+    constructor() {
+        this.model = new Model();
+        this.model.setKappa(1.4);
+        let inputs = document.getElementsByClassName("gdf_input");
+        this.namesVsInputs = splitElementsBy('name', inputs);
+        this.initEvents();
+        this.update();
+    }
+    
+    initEvents() {
+        let onInput = this.onInput.bind(this);
+        for (let input of this.namesVsInputs.values()) {
+            input.addEventListener('change', onInput);
+        }
+    }
+    
+    onInput(e) {
+        let input = e.target;
+        let name = input.name;
+        let value = input.value;
+        if (name == 'kappa') {
+            this.model.setKappa(value);
+        } else {
+            this.model.setField(name, value);
+        }
+        this.update();
+    }
+    
+    update() {
+        let state = this.model.getActiveState();
+        for (let [name, value] of state.entries()) {
+            let input = this.namesVsInputs.get(name);
+            input.value = value;
+        }
+    }
+}
+
 class ControllerFormGdf {
     constructor() {
         this.nameVsGasState = new Map([
@@ -754,7 +854,7 @@ class ControllerFormGdf {
             inputController.addLimiterOutOnInput(limiterOutputOfDecimalSeparator);
             inputController.addLimiterOutput(limiterOutputOfFloatRepresentation);
         }
-        
+
         let kappaInputController = this.nameVsInputController.get('kappa');
         let kappaInput = kappaInputController.getInput();
         kappaInputController.addLimiterInput(new LimiterInputOfHtmlPattern(kappaInput));
@@ -806,4 +906,5 @@ class ControllerFormGdf {
         2. graphs
 */
 
-let controller = new ControllerFormGdf();
+//let controller = new ControllerFormGdf();
+let controller = new ControllerFormGdf2();
