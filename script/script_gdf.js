@@ -356,8 +356,15 @@ class Model {
     }
 
     setField(name, value) {
-        this.gasState.set(name, value);
         this.activeStateProcessor = this.nameVsGasStateProcessor.get(name);
+        let numVal = +value;
+        if (numVal < this.activeStateProcessor.getArgMin()) {
+            numVal = this.activeStateProcessor.getArgMin()
+        }
+        if (numVal > this.activeStateProcessor.getArgMax()) {
+            numVal = this.activeStateProcessor.getArgMax()
+        }
+        this.gasState.set(name, numVal);
     }
     
     setKappa(value) {
@@ -396,7 +403,7 @@ class SettingsModel {
         this.settings.set(name, value);
     }
     
-    formatValue(value) {
+    formatValueOnOuput(value) {
         let mantissaSize = +this.settings.get('mantissa_size');
         let notation = this.settings.get('notation');
         let formattedValue;
@@ -408,6 +415,10 @@ class SettingsModel {
         formattedValue = this.replaceSeparator(formattedValue);
         formattedValue = formattedValue.replace(this.regexDelTrailZeros, '');
         return formattedValue;
+    }
+    
+    formatValueOnInput(value) {
+        return this.replaceSeparator(value);
     }
     
     replaceSeparator(value) {
@@ -888,6 +899,7 @@ class ControllerFormSettings {
 
 
 class ControllerFormGdf2 {
+    
     constructor(settingsModel) {
         this.settindsModel = settingsModel;
         this.model = new Model();
@@ -895,27 +907,41 @@ class ControllerFormGdf2 {
         this.namesVsInputs = splitElementsBy('name', inputs);
         let flowSpeedElements = document.getElementsByName('flow_speed');
         this.radios = splitElementsBy('id', flowSpeedElements);
+        this.currInput = undefined;
         this.initEvents();
         this.update();
     }
     
     initEvents() {
         let updateSwitcherState = this.updateSwitcherStateByMachVal.bind(this);
+        let onFocusIn = this.onFocusIn.bind(this);
+        let onFocusOut = this.onFocusOut.bind(this);
         let onInput = this.onInput.bind(this);
         for (let input of this.namesVsInputs.values()) {
-            input.addEventListener('change', onInput);
+            input.addEventListener('focusin', onFocusIn);
+            input.addEventListener('focusout', onFocusOut);
+            input.addEventListener('input', onInput);
         }
-        
         let subsoundChecked = this.subsoundChecked.bind(this);
         this.radios.get('subsound').addEventListener('change', subsoundChecked);
         let supersoundChecked = this.supersoundChecked.bind(this);
         this.radios.get('supersound').addEventListener('change', supersoundChecked);
     }
     
+    onFocusIn(e) {
+        this.currInput = e.target;
+        this.namesVsInputs.delete(this.currInput.name);
+    }
+    
+    onFocusOut(e) {
+        this.namesVsInputs.set(this.currInput.name, this.currInput);
+        this.update();
+    }
+    
     onInput(e) {
         let input = e.target;
         let name = input.name;
-        let value = input.value;
+        let value = this.settindsModel.formatValueOnInput(input.value);
         if (name == 'kappa') {
             this.model.setKappa(value);
         } else {
@@ -925,10 +951,10 @@ class ControllerFormGdf2 {
     }
     
     update() {
+        console.log(this.namesVsInputs);
         let state = this.model.getActiveState();
-        for (let [name, value] of state.entries()) {
-            let input = this.namesVsInputs.get(name);
-            input.value = this.settindsModel.formatValue(value);
+        for (let [name, input] of this.namesVsInputs) {
+            input.value = this.settindsModel.formatValueOnOuput(state.get(name));
         }
         this.updateSwitcherStateByMachVal();
     }
