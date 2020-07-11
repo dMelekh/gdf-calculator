@@ -557,6 +557,34 @@ class LimiterOutputOfFloatRepresentation {
 }
 
 
+class LimitedInput {
+    constructor(input) {
+        this.input = input;
+        this.limiters = [
+            new LimiterInputOfHtmlPattern(input),
+        ];
+        if (input.hasAttribute('min') && input.hasAttribute('max')) {
+            this.limiters.push(new LimiterInputOfHtmlValue(input));
+        }
+        let onInput = this.onInput.bind(this);
+        input.addEventListener('input', onInput);
+    }
+    
+    updateValue() {
+        this.currValue = this.input.value;
+        this.prevValue = this.input.value;
+    }
+    
+    onInput() {
+        this.currValue = this.input.value;
+        for (let limiter of this.limiters) {
+            this.currValue = limiter.limit(this.prevValue, this.currValue);
+        }
+        this.prevValue = this.currValue;
+        this.input.value = this.currValue;
+    }
+}
+
 class ControllerInput {
     //  listener is a method
     constructor(input, properties, inputTypeInputOrChange) {
@@ -905,11 +933,13 @@ class ControllerFormGdf2 {
         this.model = new Model();
         let inputs = document.getElementsByClassName("gdf_input");
         this.namesVsInputs = splitElementsBy('name', inputs);
+        this.namesVsLimitedInputs = new Map();
         let flowSpeedElements = document.getElementsByName('flow_speed');
         this.radios = splitElementsBy('id', flowSpeedElements);
         this.currInput = undefined;
         this.initEvents();
         this.update();
+        this.__updatePrevValues();
     }
     
     initEvents() {
@@ -917,7 +947,8 @@ class ControllerFormGdf2 {
         let onFocusIn = this.onFocusIn.bind(this);
         let onFocusOut = this.onFocusOut.bind(this);
         let onInput = this.onInput.bind(this);
-        for (let input of this.namesVsInputs.values()) {
+        for (let [name, input] of this.namesVsInputs.entries()) {
+            this.namesVsLimitedInputs.set(name, new LimitedInput(input));
             input.addEventListener('focusin', onFocusIn);
             input.addEventListener('focusout', onFocusOut);
             input.addEventListener('input', onInput);
@@ -926,6 +957,12 @@ class ControllerFormGdf2 {
         this.radios.get('subsound').addEventListener('change', subsoundChecked);
         let supersoundChecked = this.supersoundChecked.bind(this);
         this.radios.get('supersound').addEventListener('change', supersoundChecked);
+    }
+    
+    __updatePrevValues() {
+        for (let limitedInput of this.namesVsLimitedInputs.values()) {
+            limitedInput.updateValue();
+        }
     }
     
     onFocusIn(e) {
@@ -951,9 +988,8 @@ class ControllerFormGdf2 {
     }
     
     update() {
-        console.log(this.namesVsInputs);
         let state = this.model.getActiveState();
-        for (let [name, input] of this.namesVsInputs) {
+        for (let [name, input] of this.namesVsInputs.entries()) {
             input.value = this.settindsModel.formatValueOnOuput(state.get(name));
         }
         this.updateSwitcherStateByMachVal();
