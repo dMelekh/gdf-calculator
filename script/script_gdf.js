@@ -346,8 +346,13 @@ class Model {
             ['qu', 'getQu']
         ]));
         this.gasState = new Map();
-        this.setField('mach', 1.0);
         this.maxKappaVal = 5./3.;  // https://en.wikipedia.org/wiki/Heat_capacity_ratio
+        this.__initState();
+    }
+    
+    __initState() {
+        this.setKappa(1.4);
+        this.setField('mach', 1.0);
     }
 
     setField(name, value) {
@@ -366,9 +371,48 @@ class Model {
         }
     }
     
+    setSubsound() {
+        this.nameVsGasStateProcessor.get('qu').setSubsound();
+        this.setField('qu', this.activeStateProcessor.getQu());
+    }
+    
+    setSupersound() {
+        this.nameVsGasStateProcessor.get('qu').setSupersound();
+        this.setField('qu', this.activeStateProcessor.getQu());
+    }
+    
     getActiveState() {
         this.gasStateUpdater.update(this.gasState, this.activeStateProcessor);
         return this.gasState;
+    }
+}
+
+class SettingsModel {
+    constructor() {
+        this.settings = new Map();
+    }
+    
+    setField(name, value) {
+        this.settings.set(name, value);
+    }
+    
+    formatValue(value) {
+        let mantissaSize = +this.settings.get('mantissa_size');
+        let notation = this.settings.get('notation');
+        let formattedValue;
+        if (notation == 'scientific') {
+            formattedValue = (+value).toExponential(mantissaSize);
+        } else {
+            formattedValue = (+value).toFixed(mantissaSize);
+        }
+        formattedValue = this.replaceSeparator(formattedValue);
+        formattedValue = formattedValue.replace(this.regexDelTrailZeros, '');
+        return formattedValue;
+    }
+    
+    replaceSeparator(value) {
+        let separator = this.settings.get('decimal_separator');
+        return value.toString().replace(/[\.\,]/g, separator);
     }
 }
 
@@ -381,6 +425,7 @@ let getterByName = {
     'epsilon': 'getEpsilon',
     'qu': 'getQu'
 };
+
 
 class ControllerFormProperties {
     constructor() {
@@ -422,6 +467,84 @@ class ControllerFormProperties {
         }
     }
 }
+
+
+class LimiterInputOfHtmlPattern {
+    constructor(input) {
+        this.pattern = new RegExp(input.pattern);
+    }
+
+    limit(prev, curr) {
+        if (this.pattern.test(curr)) {
+            return curr;
+        }
+        return prev;
+    }
+}
+
+class LimiterInputOfHtmlValue {
+    constructor(input) {
+        this.min = +input.min;
+        this.max = +input.max;
+    }
+
+    limit(prev, curr) {
+        let currVal = +curr;
+        if (currVal < this.min) {
+            return this.min;
+        }
+        if (currVal > this.max) {
+            return this.max;
+        }
+        return curr;
+    }
+}
+
+class LimiterInputOfModelValue {
+    constructor(model) {
+        this.model = model;
+    }
+
+    limit(prev, curr) {
+        let currVal = +curr;
+        if (currVal < this.model.getArgMin()) {
+            return this.model.getArgMin().toString();
+        }
+        if (currVal > this.model.getArgMax()) {
+            return this.model.getArgMax().toString();
+        }
+        return curr;
+    }
+}
+
+class LimiterInputOfDecimalSeparator {
+    constructor() {}
+
+    limit(prev, curr) {
+        return curr.replace(/[\.\,]/g, '\.');
+    }
+}
+
+class LimiterOutputOfDecimalSeparator {
+    constructor(properties) {
+        this.properties = properties;
+    }
+
+    limit(curr) {
+        return this.properties.replaceSeparator(curr);
+    }
+}
+
+class LimiterOutputOfFloatRepresentation {
+    constructor(properties) {
+        this.properties = properties;
+    }
+
+    limit(curr) {
+        return this.properties.formatValue(curr);
+    }
+}
+
 
 class ControllerInput {
     //  listener is a method
@@ -519,82 +642,6 @@ class ControllerInput {
 
     addLimiterOutput(limiter) {
         this.limitersOutput.push(limiter);
-    }
-}
-
-class LimiterInputOfHtmlPattern {
-    constructor(input) {
-        this.pattern = new RegExp(input.pattern);
-    }
-
-    limit(prev, curr) {
-        if (this.pattern.test(curr)) {
-            return curr;
-        }
-        return prev;
-    }
-}
-
-class LimiterInputOfHtmlValue {
-    constructor(input) {
-        this.min = +input.min;
-        this.max = +input.max;
-    }
-
-    limit(prev, curr) {
-        let currVal = +curr;
-        if (currVal < this.min) {
-            return this.min;
-        }
-        if (currVal > this.max) {
-            return this.max;
-        }
-        return curr;
-    }
-}
-
-class LimiterInputOfModelValue {
-    constructor(model) {
-        this.model = model;
-    }
-
-    limit(prev, curr) {
-        let currVal = +curr;
-        if (currVal < this.model.getArgMin()) {
-            return this.model.getArgMin().toString();
-        }
-        if (currVal > this.model.getArgMax()) {
-            return this.model.getArgMax().toString();
-        }
-        return curr;
-    }
-}
-
-class LimiterInputOfDecimalSeparator {
-    constructor() {}
-
-    limit(prev, curr) {
-        return curr.replace(/[\.\,]/g, '\.');
-    }
-}
-
-class LimiterOutputOfDecimalSeparator {
-    constructor(properties) {
-        this.properties = properties;
-    }
-
-    limit(curr) {
-        return this.properties.replaceSeparator(curr);
-    }
-}
-
-class LimiterOutputOfFloatRepresentation {
-    constructor(properties) {
-        this.properties = properties;
-    }
-
-    limit(curr) {
-        return this.properties.formatValue(curr);
     }
 }
 
@@ -775,14 +822,12 @@ class ControllerMachZoneSwitcher {
 }
 
 
-class ControllerFormGdf2 {
-    constructor() {
-        this.model = new Model();
-        this.model.setKappa(1.4);
-        let inputs = document.getElementsByClassName("gdf_input");
+class BasicController {
+    constructor(inputs, model) {
+        this.model = model;
+        this.inputs = inputs;
         this.namesVsInputs = splitElementsBy('name', inputs);
         this.initEvents();
-        this.update();
     }
     
     initEvents() {
@@ -790,6 +835,81 @@ class ControllerFormGdf2 {
         for (let input of this.namesVsInputs.values()) {
             input.addEventListener('change', onInput);
         }
+    }
+    
+    setCurrValsToModel() {
+        for (let [name, input] of this.namesVsInputs) {
+            this.model.setField(name, input.value);
+        }
+    }
+    
+    onInput(e) {
+        let input = e.target;
+        let name = input.name;
+        let value = input.value;
+        this.model.setField(name, value);
+    }
+}
+
+class ControllerFormSettings {
+    constructor(settingsModel) {
+        this.dependentControllers = []
+        this.settingsModel = settingsModel;
+        this.controllerInputs = document.getElementsByClassName("setting_input");
+        this.base = new BasicController(this.controllerInputs, settingsModel);
+        this.base.setCurrValsToModel();
+        this.initEvents();
+    }
+    
+    addDependentController(dependentController) {
+        if (this.dependentControllers.includes(dependentController)) {
+            return
+        }
+        this.dependentControllers.push(dependentController)
+    }
+    
+    initEvents() {
+        let onInput = this.onInput.bind(this);
+        for (let input of this.controllerInputs) {
+            input.addEventListener('change', onInput);
+        }
+    }
+    
+    onInput(e) {
+        this.update()
+    }
+    
+    update() {
+        for (let dependentController of this.dependentControllers) {
+            dependentController.update();
+        }
+    }
+}
+
+
+class ControllerFormGdf2 {
+    constructor(settingsModel) {
+        this.settindsModel = settingsModel;
+        this.model = new Model();
+        let inputs = document.getElementsByClassName("gdf_input");
+        this.namesVsInputs = splitElementsBy('name', inputs);
+        let flowSpeedElements = document.getElementsByName('flow_speed');
+        this.radios = splitElementsBy('id', flowSpeedElements);
+        this.initEvents();
+        this.update();
+    }
+    
+    initEvents() {
+        let updateSwitcherState = this.updateSwitcherStateByMachVal.bind(this);
+        let onInput = this.onInput.bind(this);
+        for (let input of this.namesVsInputs.values()) {
+            input.addEventListener('change', onInput);
+        }
+        
+        let subsoundChecked = this.subsoundChecked.bind(this);
+        this.radios.get('subsound').addEventListener('change', subsoundChecked);
+        let supersoundChecked = this.supersoundChecked.bind(this);
+        this.radios.get('supersound').addEventListener('change', supersoundChecked);
     }
     
     onInput(e) {
@@ -808,8 +928,38 @@ class ControllerFormGdf2 {
         let state = this.model.getActiveState();
         for (let [name, value] of state.entries()) {
             let input = this.namesVsInputs.get(name);
-            input.value = value;
+            input.value = this.settindsModel.formatValue(value);
         }
+        this.updateSwitcherStateByMachVal();
+    }
+    
+    updateSwitcherStateByMachVal() {
+        let state = this.model.getActiveState();
+        let val = +state.get('mach');
+        if (val < 1) {
+            this.radios.get('subsound').checked = true;
+            return;
+        }
+        if (val > 1) {
+            this.radios.get('supersound').checked = true;
+            return;
+        }
+        // default state
+        if (!this.radios.get('subsound').checked && !this.radios.get('supersound').checked) {
+            this.radios.get('subsound').checked = true;
+            this.model.setSubsound();
+            return;
+        }
+    }
+
+    subsoundChecked() {
+        this.model.setSubsound();
+        this.update();
+    }
+
+    supersoundChecked() {
+        this.model.setSupersound();
+        this.update();
     }
 }
 
@@ -907,4 +1057,7 @@ class ControllerFormGdf {
 */
 
 //let controller = new ControllerFormGdf();
-let controller = new ControllerFormGdf2();
+let settingsModel = new SettingsModel();
+let settingsController = new ControllerFormSettings(settingsModel);
+let controller = new ControllerFormGdf2(settingsModel);
+settingsController.addDependentController(controller);
