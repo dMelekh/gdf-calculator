@@ -20,7 +20,7 @@ class TabVisibility {
         this.nameVsTabContent = splitElementsByArrOf(['attributes', 'name', 'value'], this.tabContent);
         this.tabs = document.getElementsByClassName("tab");
         this.initEvents();
-        document.getElementById('tab_opened_by_default').click();
+        document.getElementById('tab_gdf').click();  // tab_gdf is opened by default
     }
 
     initEvents() {
