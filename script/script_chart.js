@@ -1,3 +1,5 @@
+import {modelGdf} from './script_gdf.js'; 
+
 class MyChart {
     
     // https://developers.google.com/chart
@@ -142,9 +144,10 @@ let columns_data = new Map([
 function on_select(e) {
     let val = e.target.value;
     my_chart.update_chart(axes_names.get(val), columns_names.get(val), columns_data.get(val));
+    console.log(modelGdf.getActiveState());
 }
 
-chart_args = document.getElementsByName('chart_arg');
+let chart_args = document.getElementsByName('chart_arg');
 //dict = new Map();
 for (let chart_arg of chart_args) {
     chart_arg.addEventListener('change', on_select);

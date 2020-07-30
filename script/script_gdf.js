@@ -341,7 +341,7 @@ class GasStateUpdater {
     }
 }
 
-class ModelGdf {
+export class ModelGdf {
     constructor() {
         this.nameVsGasStateProcessor = new Map([
             ['mach', new GasStateByMach()],
@@ -585,9 +585,9 @@ class ControllerFormSettings {
 
 class ControllerFormGdf {
 
-    constructor(modelSettings) {
+    constructor(modelSettings, modelGdf) {
         this.modelSettings = modelSettings;
-        this.modelGdf = new ModelGdf();
+        this.modelGdf = modelGdf;
         let inputs = document.getElementsByClassName("gdf_input");
         this.namesVsInputs = splitElementsBy('name', inputs);
         this.namesVsLimitedInputs = new Map();
@@ -692,6 +692,7 @@ class ControllerFormGdf {
 */
 
 let modelSettings = new ModelSettings();
+export let modelGdf = new ModelGdf();
 let controllerSettings = new ControllerFormSettings(modelSettings);
-let controller = new ControllerFormGdf(modelSettings);
+let controller = new ControllerFormGdf(modelSettings, modelGdf);
 controllerSettings.addDependentController(controller);
