@@ -1,14 +1,23 @@
-import {modelGdf} from './script_gdf.js'; 
+import {
+    modelGdf
+} from './script_gdf.js';
+import {
+    ModelGdf
+} from './script_gdf.js';
 
-class MyChart {
-    
+
+class ControllerChart {
+
     // https://developers.google.com/chart
-    
+
     constructor() {
+        google.charts.load('current', {
+            packages: ['corechart', 'line']
+        });
         this.chart_element = document.getElementById('curve_chart');
         this.init();
     }
-    
+
     init() {
         // axes_names = Map('x': 'x_name', 'y': 'y_name')
         // columns_names = [line1_name, line2_name, ...]
@@ -35,7 +44,9 @@ class MyChart {
                 title: 'y_axis_name'
             },
             colors: ['blue', 'red', 'green', 'orange', 'gray'],
-            legend: { position: 'bottom' },
+            legend: {
+                position: 'bottom'
+            },
             width: 200,
             height: 100,
         };
@@ -56,7 +67,7 @@ class MyChart {
         let tab_chart = document.getElementById('tab_chart');
         tab_chart.addEventListener('click', on_display);
     }
-    
+
     _google_callback() {
         this.chart = new google.visualization.LineChart(this.chart_element);
         this.data = new google.visualization.DataTable();
@@ -64,15 +75,15 @@ class MyChart {
         this.draw();
     }
 
-    update_chart(axes_names, columns_names, columns_data) {
+    update_chart(axes_names, columns_names, columns_data, curves_num) {
         this.clear();
         this.columns_names = columns_names;
         this._set_options(axes_names);
-        this._set_data_by_rows(columns_data);
+        this._set_data_by_rows(columns_data, curves_num);
         this._set_data_to_chart();
         this.draw();
     }
-    
+
     clear() {
         this.data.removeRows(0, 1000000); // right limit is arbitrary
         this.data.removeColumns(0, 1000); // right limit is arbitrary
@@ -85,7 +96,7 @@ class MyChart {
         this.options.vAxis.title = y_axis_name;
     }
 
-    _set_data_by_rows(data_by_columns) {
+    _set_data_by_rows(data_by_columns, curves_num) {
         // defines this.points_data
         this.data_by_rows = [];
         for (let i = 0; i < data_by_columns[0].length; i++) {
@@ -116,39 +127,94 @@ class MyChart {
         this.options.height = 0;
         this.draw();
     }
-    
+
     draw() {
         this.chart.draw(this.data, this.options);
     }
 
 }
 
+class ModelChart {
+    constructor() {
+        this.model_gdf = new ModelGdf();
+        this.lines = new Map();
+        this.init_line_lyamb();
+        this.init_lines();
+    }
 
-google.charts.load('current', {
-    packages: ['corechart', 'line']
-});
-let my_chart = new MyChart();
-let axes_names = new Map([
-    ['lambda', new Map([['x', 'lambda']])],
-    ['mach', new Map([['x', 'mach']])]
-]);
-let columns_names = new Map([
-    ['lambda', ['mach = f(lambda)']],
-    ['mach', ['lambda = f(mach)']]
-]);
-let columns_data = new Map([
-    ['lambda', [[1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 3, 2]]],
-    ['mach', [[1, 2, 3, 4, 5, 6], [2, 3, 3, 2, 1, 0]]]
-]);
+    init_line_lyamb() {
+        this.lines.set('lambda', []);
+        let arr = this.lines.get('lambda');
+        let min_val = this.model_gdf.getMinOf('lambda');
+        let max_val = this.model_gdf.getMaxOf('lambda') * 0.99;
+        let dots_num = 100;
+        let step = (max_val - min_val) / (dots_num - 1);
+        let curr_mach = 0.0;
+        for (let curr_val = min_val; curr_val <= max_val; curr_val += step) {
+            arr.push(curr_val);
+        }
+    }
 
-function on_select(e) {
-    let val = e.target.value;
-    my_chart.update_chart(axes_names.get(val), columns_names.get(val), columns_data.get(val));
-    console.log(modelGdf.getActiveState());
+    init_lines() {
+        this.lines.set('mach', []);
+        let arr_mach = this.lines.get('mach');
+        let arr_lambda = this.lines.get('lambda');
+        for (let lambda of arr_lambda) {
+            this.model_gdf.setField('lambda', lambda);
+            let state = this.model_gdf.getActiveState();
+            arr_mach.push(state.get('mach'));
+        }
+    }
+
+    get_line_by_name(line_name) {
+        return this.lines.get(line_name);
+    }
 }
 
-let chart_args = document.getElementsByName('chart_arg');
-//dict = new Map();
-for (let chart_arg of chart_args) {
-    chart_arg.addEventListener('change', on_select);
+class ControllerChartTab {
+    constructor() {
+        this.controller_chart = new ControllerChart();
+        this.model_chart = new ModelChart();
+        this.axes_names = new Map([['x', 'x_name'], ['y', 'y_name']]);
+        this.columns_names = [];
+        this.columns_data = [];
+        this.chart_args = document.getElementsByName('chart_arg');
+        let on_arg_change = this.on_arg_change.bind(this);
+        for (let chart_arg of this.chart_args) {
+            chart_arg.addEventListener('change', on_arg_change);
+        }
+    }
+
+    on_arg_change(e) {
+        let arg_name = e.target.value;
+        let fun_name = 'lambda';
+        if (arg_name == 'lambda') {
+            fun_name = 'mach';
+        }
+        let curves_num = 1;
+        let arg_line = this.model_chart.get_line_by_name(arg_name);
+        let fun_line = this.model_chart.get_line_by_name(fun_name);
+        this.columns_data[0] = arg_line;
+        this.columns_data[1] = fun_line;
+        this.axes_names.set('x', arg_name);
+        this.axes_names.set('y', fun_name);
+        this.columns_names[0] = fun_name + '=f(' + arg_name + ')';
+        this.controller_chart.update_chart(this.axes_names, this.columns_names, this.columns_data, curves_num);
+    }
 }
+
+let controller_chart_tab = new ControllerChartTab();
+
+
+//let axes_names = new Map([
+//    ['lambda', new Map([['x', 'lambda']])],
+//    ['mach', new Map([['x', 'mach']])]
+//]);
+//let columns_names = new Map([
+//    ['lambda', ['mach = f(lambda)']],
+//    ['mach', ['lambda = f(mach)']]
+//]);
+//let columns_data = new Map([
+//    ['lambda', [[1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 3, 2]]],
+//    ['mach', [[1, 2, 3, 4, 5, 6], [2, 3, 3, 2, 1, 0]]]
+//]);

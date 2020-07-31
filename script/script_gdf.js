@@ -370,6 +370,7 @@ export class ModelGdf {
     }
 
     setField(name, value) {
+        // name is name of the field - one of the next: 'mach', 'lambda', 'pi', 'tau', 'epsilon', 'qu'
         this.activeStateProcessor = this.nameVsGasStateProcessor.get(name);
         let numVal = +value;
         if (numVal < this.activeStateProcessor.getArgMin()) {
@@ -381,7 +382,15 @@ export class ModelGdf {
         this.gasState.set(name, numVal);
         this.update();
     }
-
+    
+    getMinOf(name) {
+        return this.nameVsGasStateProcessor.get(name).getArgMin()
+    }
+    
+    getMaxOf(name) {
+        return this.nameVsGasStateProcessor.get(name).getArgMax()
+    }    
+    
     setKappa(value) {
         this.gasState.set('kappa', value);
         let kappaVal = +value;
@@ -420,7 +429,7 @@ export class ModelGdf {
         this.setField('qu', this.activeStateProcessor.getQu());
     }
 
-    getActiveState() {    
+    getActiveState() {
         return this.gasState;
     }
 }
